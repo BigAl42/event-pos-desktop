@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+src-tauri/target/
+src-tauri/gen/schemas
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env and secrets
+.env
+.env.local
+.env.*.local
+*.local
+
+# Logs and temp
+*.log
+npm-debug.log*
+.npm
+.tmp
+temp/
+tmp/
+
+# Tauri
+src-tauri/WixTools/
+*.rs.bk
+
+# Test / coverage (optional)
+coverage/
+.nyc_output/

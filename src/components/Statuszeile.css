@@ -1,0 +1,48 @@
+.statuszeile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0.35rem 1rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  background: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
+}
+
+.statuszeile-role {
+  font-weight: 600;
+  color: #475569;
+}
+
+.statuszeile-sep {
+  color: #94a3b8;
+}
+
+.statuszeile-ok {
+  color: #276749;
+  font-weight: 500;
+}
+
+.statuszeile-warn {
+  color: #c53030;
+  font-weight: 500;
+}
+
+.statuszeile-pending-join {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: inherit;
+  font-weight: 600;
+  color: #2c5282;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.statuszeile-pending-join:hover {
+  color: #1a365d;
+}

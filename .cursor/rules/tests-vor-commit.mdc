@@ -1,0 +1,21 @@
+---
+description: Vor jedem Commit müssen alle Tests laufen und grün sein.
+alwaysApply: true
+---
+
+# Tests vor Commit
+
+- **Vor jedem Commit müssen alle Tests erfolgreich durchlaufen.**
+  - Es wird **nicht** committet, wenn Tests fehlschlagen oder übersprungen werden, um einen Commit zu erzwingen.
+  - Vor dem Commit immer `npm run test:all` ausführen (Frontend: Vitest, Backend: `cargo test --features test` in `src-tauri/`).
+
+- **Pre-Commit-Hook (Husky)**
+  - Der Hook unter `.husky/pre-commit` führt `npm run test:all` aus. Schlägt das fehl, wird der Commit abgebrochen.
+  - In CI-Umgebungen kann `HUSKY=0` gesetzt werden, um den Hook zu deaktivieren (die Pipeline führt die Tests ohnehin aus).
+
+- **Manuell vor dem Commit**
+  - Im Projektroot: `npm run test:all` (läuft Frontend-Tests und Rust-Tests mit Feature `test`).
+  - Alternativ: `npm run test:run` und `cd src-tauri && cargo test --features test`.
+
+- **Neue oder geänderte Funktionalität**
+  - Neue oder geänderte Features werden von passenden Tests abgedeckt; bestehende Tests bleiben grün.

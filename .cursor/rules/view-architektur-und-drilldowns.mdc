@@ -1,0 +1,41 @@
+---
+description: Generische Regeln für View-Architektur, Read-Only-Ansichten und Drilldowns im Kassensystem
+alwaysApply: true
+---
+
+# View-Architektur, Read-Only-Ansichten & Drilldowns
+
+- **Klare Trennung von Read-Only- und Mutations-Ansichten**
+  - Views, die als „Nebenkasse“ oder „Read-Only“-Ansichten dienen, dürfen **keine** schreibenden Operationen ausführen (keine Create/Update/Delete, kein Import/Sync von Stammdaten).
+  - Änderungen an Stammdaten oder relevanten Geschäftsobjekten erfolgen ausschließlich in expliziten Verwaltungs-/Hauptkassen-Views.
+
+- **Geschäftslogik und Aggregationen gehören ins Backend**
+  - Aggregationen (z.B. Umsätze, Summen, Statistiken) werden grundsätzlich im Backend/Tauri berechnet und über Commands (z.B. `invoke` in `db.ts`) bereitgestellt.
+  - Das Frontend nutzt für Abrechnungen und Auswertungen ausschließlich diese Backend-Ergebnisse, um doppelte SQL-/Logik und Inkonsistenzen zu vermeiden.
+
+- **Navigation in Listen und Drilldowns: explizite Aktionen statt „versteckter“ Klickflächen**
+  - Zeilen in Listen-Views (z.B. Tabellen) sind standardmäßig **nicht** als gesamte Zeile klickbar, sofern der Klick zu einer Drilldown-/Detailansicht führt.
+  - Drilldowns werden über klar erkennbare, explizite Bedienelemente (Buttons/Icons wie „Details“, Lupe o.Ä.) geöffnet.
+  - So bleibt die Unterscheidung zwischen Navigation (z.B. zurück zur Startseite) und Detail-Ansicht für Nutzende eindeutig.
+
+- **Drilldowns als eigene Views statt „eingeschobene“ Overlays**
+  - Detail-/Drilldown-Ansichten werden als **eigene View** im globalen View-State (z.B. `view === "entity_drilldown"`) oder in einem separaten Fenster gerendert – nicht als zusätzliches Overlay unterhalb einer bestehenden Seite.
+  - In der zentralen App-Komponente (z.B. `App.tsx`):
+    - Steuert der globale `view`-State, welche Hauptansicht sichtbar ist (inkl. Drilldowns/Fenster).
+    - Werden globale Layout-Bestandteile (z.B. Statuszeile) nicht mit Drilldown-spezifischen Inhalten vermischt.
+
+- **Neue Views vollständig „verkabeln“**
+  - Beim Einführen oder Ändern von Views/Komponenten in der zentralen App-Komponente ist sicherzustellen, dass:
+    - der Import der View vorhanden ist,
+    - ein entsprechender `view`-Case im JSX existiert,
+    - alle notwendigen Props (z.B. `onBack`, `onClose`, `onSelect`) gesetzt sind.
+  - Nach Refactorings (z.B. Entfernen/Umbenennen von Drilldown-Komponenten) wird kurz gebaut/gestartet, um leere Seiten oder fehlende Importe früh zu erkennen.
+
+- **Konsequente, kontextbezogene Zurück-Navigation**
+  - Jede Drilldown-/Detailansicht bietet einen gut sichtbaren Zurück-Button, der klar in die vorherige, fachlich passende View zurückführt (nicht pauschal zur Startseite).
+  - Die Zurück-Navigation darf die globale App-Navigation nicht „überschreiben“, solange ein sinnvoller vorheriger Kontext existiert.
+
+- **UX-Konsistenz bei Beträgen, Summen und Gruppierungen**
+  - Formatierung von Geldbeträgen (z.B. zwei Nachkommastellen, `€`) und Summen richtet sich an einer zentralen Referenz-View (z.B. Abrechnung) aus.
+  - Gruppierungen (z.B. nach Kasse, Terminal, Händler, Zeitraum) werden klar beschriftet (sprechende Namen statt kryptischer IDs) und nicht mit irreführenden Zusatztexten kombiniert, insbesondere an Stellen ohne direkt folgende Liste.
+

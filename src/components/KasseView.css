@@ -1,0 +1,200 @@
+.kasse-view {
+  min-height: 100vh;
+  padding: 1rem;
+  max-width: 640px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.kasse-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.kasse-header button {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.kasse-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.kasse-block-message {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  color: #856404;
+}
+
+.kasse-unknown-haendler {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #c53030;
+  border-radius: 8px;
+  color: #744210;
+}
+
+.kasse-unknown-haendler p {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.kasse-unknown-haendler p:last-of-type {
+  margin-bottom: 0.75rem;
+}
+
+.kasse-unknown-haendler-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.kasse-unknown-haendler-actions button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+}
+
+.kasse-trotzdem-buchen {
+  background: #c53030 !important;
+  color: #fff !important;
+  border-color: #9b2c2c !important;
+}
+
+.kasse-trotzdem-buchen:hover:not(:disabled) {
+  background: #9b2c2c !important;
+}
+
+.kasse-personen {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.kasse-personen p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.link-btn {
+  margin-left: 0.5rem;
+  background: none;
+  border: none;
+  color: #1a5fb4;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.personen-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.personen-edit input {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 120px;
+}
+
+.kasse-schnell {
+  margin-bottom: 1rem;
+}
+
+.kasse-schnell-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.kasse-schnell-input::placeholder {
+  color: #888;
+}
+
+.kasse-positionen h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.position-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.position-row input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.position-row button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.add-pos {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 1px dashed #999;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  color: #666;
+}
+
+.add-pos:hover {
+  background: #f9f9f9;
+}
+
+.kasse-message {
+  margin: 1rem 0 0;
+  padding: 0.5rem;
+  background: #e8f5e9;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.kasse-abschliessen {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #0a7c42;
+  color: #fff;
+  cursor: pointer;
+}
+
+.kasse-abschliessen:hover:not(:disabled) {
+  background: #086634;
+}
+
+.kasse-abschliessen:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

@@ -1,0 +1,23 @@
+---
+description: Spezifische Ergänzungen für Nebenkassen-Händlerübersicht und Händler-Drilldown (baut auf view-architektur-und-drilldowns.mdc auf)
+alwaysApply: true
+---
+
+# Nebenkassen-Händlerübersicht & Drilldown (spezifische Ergänzungen)
+
+- **Nebenkassen-Händlerübersicht strikt read-only umsetzen**
+  - In `HaendlerSlaveView` dürfen **keine** mutierenden Funktionen verwendet werden (`createHaendler`, `updateHaendler`, `deleteHaendler`, Import/Sync von Stammdaten).
+  - Die Nebenkassen-Ansicht zeigt nur Daten (Händlerstammdaten und Umsätze), alle Änderungen passieren ausschließlich in der Hauptkassen-Händlerverwaltung.
+
+- **Händler-Umsatz ausschließlich über Backend-Aggregate**
+  - Händlerumsätze werden über einen dedizierten Backend-/Tauri-Command (z.B. `get_haendler_umsatz`) bezogen und nicht im Frontend aggregiert.
+  - In der Nebenkassen-Händlerübersicht und in Händler-Drilldowns werden nur diese Aggregatswerte verwendet.
+
+- **Explizite Drilldown-Steuerung in der Händlerliste**
+  - Die gesamte Händlerzeile in `HaendlerSlaveView` ist **nicht** klickbar.
+  - Pro Zeile wird ein klar erkennbares Bedienelement (z.B. „Details“-Button oder Lupe) verwendet, um den Händler-Drilldown zu öffnen.
+
+- **Drilldown-View für Händler mit sauberer Navigation**
+  - Für Händler-Drilldowns wird ein eigener View-State (z.B. `view === "haendler_drilldown"`) genutzt, der die generischen View-Regeln (`view-architektur-und-drilldowns.mdc`) beachtet.
+  - Jede Händler-Drilldown-Ansicht bietet einen sichtbaren Zurück-Button, der zur Nebenkassen-Händlerübersicht (`haendler_slave`) zurückführt und nicht direkt auf die Startseite springt.
+

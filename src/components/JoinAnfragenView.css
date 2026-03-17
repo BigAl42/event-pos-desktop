@@ -1,0 +1,109 @@
+.joinanfragen-view {
+  min-height: 100vh;
+  padding: 1rem;
+  max-width: 560px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.joinanfragen-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.joinanfragen-header button {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.joinanfragen-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.joinanfragen-desc {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.joinanfragen-error {
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  background: #fed7d7;
+  color: #c53030;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.joinanfragen-empty {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.joinanfragen-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.joinanfragen-list li {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.joinanfragen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.joinanfragen-id {
+  font-size: 0.85rem;
+  color: #666;
+  word-break: break-all;
+}
+
+.joinanfragen-url {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.joinanfragen-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.joinanfragen-approve {
+  padding: 0.4rem 0.75rem;
+  background: #276749;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.joinanfragen-reject {
+  padding: 0.4rem 0.75rem;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.joinanfragen-approve:disabled,
+.joinanfragen-reject:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
