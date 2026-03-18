@@ -11,6 +11,7 @@ const CSV_COLUMNS = [
   "Stadt",
   "Name",
   "Sortierung",
+  "E-Mail",
 ] as const;
 
 export type HaendlerRow = {
@@ -23,6 +24,7 @@ export type HaendlerRow = {
   stadt: string;
   name: string;
   sort: string;
+  email: string;
 };
 
 function escapeCsvField(value: string): string {
@@ -43,6 +45,7 @@ export function haendlerToRow(h: HaendlerItem): HaendlerRow {
     stadt: h.stadt ?? "",
     name: h.name ?? "",
     sort: h.sort != null ? String(h.sort) : "",
+    email: h.email ?? "",
   };
 }
 
@@ -60,6 +63,7 @@ export function exportHaendlerCsv(list: HaendlerItem[]): string {
       escapeCsvField(r.stadt),
       escapeCsvField(r.name),
       escapeCsvField(r.sort),
+      escapeCsvField(r.email),
     ].join(",");
   });
   return [header, ...rows].join("\r\n");
@@ -78,6 +82,7 @@ export function exportHaendlerExcel(list: HaendlerItem[]): ArrayBuffer {
       r.stadt,
       r.name,
       r.sort,
+      r.email,
     ];
   });
   const wb = XLSX.utils.book_new();
@@ -139,6 +144,7 @@ export function parseCsv(content: string): HaendlerRow[] {
       stadt: (cells[6] ?? "").trim(),
       name: (cells[7] ?? "").trim(),
       sort: (cells[8] ?? "").trim(),
+      email: (cells[9] ?? "").trim(),
     });
   }
   return rows;
@@ -171,6 +177,7 @@ export function parseExcel(buffer: ArrayBuffer): HaendlerRow[] {
       stadt: String(row[6] ?? "").trim(),
       name: String(row[7] ?? "").trim(),
       sort: String(row[8] ?? "").trim(),
+      email: String(row[9] ?? "").trim(),
     });
   }
   return rows;

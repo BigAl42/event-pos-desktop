@@ -297,6 +297,48 @@
   color: #c53030;
 }
 
+/* Nebenkasse: Closeout CTA */
+.startseite-closeout-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fffaf0;
+  border-radius: 8px;
+  border: 1px solid #fbd38d;
+  max-width: 600px;
+}
+
+.startseite-closeout-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.startseite-closeout-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #7b341e;
+}
+
+.startseite-closeout-status {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #744210;
+}
+
+.startseite-closeout-btn {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #744210;
+  border-radius: 6px;
+  background: #744210;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.startseite-closeout-btn:hover {
+  background: #5c350d;
+}
+
 /* Join-Dialog (Modal) */
 .startseite-join-dialog-overlay {
   position: fixed;

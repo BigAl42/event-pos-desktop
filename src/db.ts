@@ -5,9 +5,15 @@ let db: Database | null = null;
 
 export async function getDb(): Promise<Database> {
   if (db) return db;
-  const path = await invoke<string>("init_db");
-  db = await Database.load(`sqlite:${path}`);
-  return db;
+  try {
+    const path = await invoke<string>("init_db");
+    db = await Database.load(`sqlite:${path}`);
+    return db;
+  } catch (e) {
+    throw new Error(
+      `Datenbank konnte nicht initialisiert werden (init_db/Database.load fehlgeschlagen): ${String(e)}`
+    );
+  }
 }
 
 export type Kasse = {
@@ -49,6 +55,95 @@ export type Abrechnungslauf = {
   start_zeitpunkt: string;
   end_zeitpunkt: string | null;
   is_aktiv: boolean;
+};
+
+export type HaendlerAbrechnungPdfData = {
+  haendler: {
+    haendlernummer: string;
+    name: string;
+    vorname: string | null;
+    nachname: string | null;
+    strasse: string | null;
+    hausnummer: string | null;
+    plz: string | null;
+    stadt: string | null;
+    email: string | null;
+  };
+  lauf: {
+    id: string;
+    name: string;
+    start_zeitpunkt: string;
+    end_zeitpunkt: string | null;
+  };
+  werte: {
+    summe: number;
+    anzahl: number;
+  };
+};
+
+// ---------- Notfallmodus: Export/Import ----------
+
+export type NotfallExportMeta = {
+  exported_lauf_id: string;
+  exported_lauf_name: string;
+  exported_lauf_start_zeitpunkt: string;
+  exported_lauf_end_zeitpunkt: string | null;
+  export_at: string;
+  exporting_kasse_id: string | null;
+  exporting_kasse_name: string | null;
+};
+
+export type NotfallKasseRow = {
+  id: string;
+  name: string;
+  is_master: number;
+  ws_url: string | null;
+};
+
+export type NotfallKundenabrechnungRow = {
+  id: string;
+  kassen_id: string;
+  person1_name: string | null;
+  person2_name: string | null;
+  zeitstempel: string;
+  belegnummer: string | null;
+  sequence: number;
+  abrechnungslauf_id: string | null;
+};
+
+export type NotfallBuchungRow = {
+  id: string;
+  kundenabrechnung_id: string;
+  haendlernummer: string;
+  betrag: number;
+  bezeichnung: string | null;
+};
+
+export type NotfallStornoRow = {
+  id: string;
+  buchung_id: string;
+  kassen_id: string;
+  zeitstempel: string;
+  kundenabrechnung_id: string | null;
+};
+
+export type NotfallExportDto = {
+  meta: NotfallExportMeta;
+  kassen: NotfallKasseRow[];
+  kundenabrechnungen: NotfallKundenabrechnungRow[];
+  buchungen: NotfallBuchungRow[];
+  stornos: NotfallStornoRow[];
+};
+
+export type NotfallImportSummary = {
+  inserted_kassen: number;
+  ignored_kassen: number;
+  inserted_kundenabrechnungen: number;
+  ignored_kundenabrechnungen: number;
+  inserted_buchungen: number;
+  ignored_buchungen: number;
+  inserted_stornos: number;
+  ignored_stornos: number;
 };
 
 export async function getConfig(key: string): Promise<string | null> {
@@ -186,6 +281,30 @@ export async function getAktivenAbrechnungslaufId(): Promise<string> {
   return aktiv.id;
 }
 
+export async function getNotfallExportData(
+  abrechnungslaufId: string
+): Promise<NotfallExportDto> {
+  const dto = await invoke<NotfallExportDto>("get_notfall_export_data", {
+    abrechnungslaufId,
+  });
+  return {
+    ...dto,
+    buchungen: dto.buchungen.map((b) => ({ ...b, betrag: Number(b.betrag) })),
+  };
+}
+
+export async function importNotfallData(params: {
+  payload: NotfallExportDto;
+  targetAbrechnungslaufId: string;
+  allowMismatch: boolean;
+}): Promise<NotfallImportSummary> {
+  return invoke<NotfallImportSummary>("import_notfall_data", {
+    payload: params.payload,
+    targetAbrechnungslaufId: params.targetAbrechnungslaufId,
+    allowMismatch: params.allowMismatch,
+  });
+}
+
 export async function createKundenabrechnung(
   kassenId: string,
   person1: string,
@@ -243,6 +362,7 @@ export type HaendlerItem = {
   hausnummer?: string | null;
   plz?: string | null;
   stadt?: string | null;
+  email?: string | null;
 };
 
 export type CreateHaendlerParams = {
@@ -255,6 +375,7 @@ export type CreateHaendlerParams = {
   hausnummer?: string | null;
   plz?: string | null;
   stadt?: string | null;
+  email?: string | null;
 };
 
 export async function getHaendlerList(): Promise<HaendlerItem[]> {
@@ -272,6 +393,7 @@ export async function createHaendler(params: CreateHaendlerParams): Promise<void
     hausnummer: params.hausnummer ?? null,
     plz: params.plz ?? null,
     stadt: params.stadt ?? null,
+    email: params.email ?? null,
   });
 }
 
@@ -289,6 +411,7 @@ export async function updateHaendler(
     hausnummer: params.hausnummer ?? null,
     plz: params.plz ?? null,
     stadt: params.stadt ?? null,
+    email: params.email ?? null,
   });
 }
 
@@ -357,6 +480,16 @@ export async function startSyncConnections(): Promise<string> {
   return invoke<string>("start_sync_connections");
 }
 
+export type SyncRuntimeStatus = {
+  started: boolean;
+  connected_peers: number;
+  started_at: string | null;
+};
+
+export async function getSyncRuntimeStatus(): Promise<SyncRuntimeStatus> {
+  return invoke<SyncRuntimeStatus>("get_sync_runtime_status");
+}
+
 // ---------- Phase 4: Storno ----------
 
 export type KundenabrechnungListItem = {
@@ -413,8 +546,11 @@ export async function stornoAbrechnung(kundenabrechnungId: string): Promise<void
 export type SyncStatusEntry = {
   peer_id: string;
   name: string;
+  ws_url: string;
   connected: boolean;
   last_sync: string | null;
+  closeout_ok_for_lauf_id?: string | null;
+  closeout_ok_at?: string | null;
 };
 
 export async function getSyncStatus(): Promise<SyncStatusEntry[]> {
@@ -454,6 +590,23 @@ export async function getAbrechnungsläufe(): Promise<Abrechnungslauf[]> {
   return invoke<Abrechnungslauf[]>("get_abrechnungsläufe");
 }
 
+export async function getHaendlerAbrechnungPdfData(
+  haendlernummer: string,
+  abrechnungslaufId: string
+): Promise<HaendlerAbrechnungPdfData> {
+  const dto = await invoke<HaendlerAbrechnungPdfData>("get_haendler_abrechnung_pdf_data", {
+    haendlernummer,
+    abrechnungslaufId,
+  });
+  return {
+    ...dto,
+    werte: {
+      summe: Number(dto.werte.summe),
+      anzahl: Number(dto.werte.anzahl),
+    },
+  };
+}
+
 export async function createAbrechnungslauf(name: string): Promise<string> {
   return invoke<string>("create_abrechnungslauf", { name });
 }
@@ -465,4 +618,20 @@ export async function deleteAbrechnungslauf(id: string): Promise<string> {
 /** Nebenkasse: Fordert bei der Hauptkasse einen Reset des lokalen Abrechnungslaufs an (alle lokalen Buchungen werden gelöscht, Lauf = Hauptkasse). */
 export async function requestSlaveReset(): Promise<string> {
   return invoke<string>("request_slave_reset");
+}
+
+/** Nebenkasse: „Abmelden/Lauf fertig“ – lässt die Hauptkasse bestätigen, dass alle Daten angekommen sind. */
+export async function requestCloseout(): Promise<string> {
+  return invoke<string>("request_closeout");
+}
+
+/** Nebenkasse: Entkoppelt diese Kasse lokal vom Netzwerk (vergisst Master/Peers). */
+export async function leaveNetwork(): Promise<string> {
+  return invoke<string>("leave_network");
+}
+
+/** Löscht alle lokalen Daten dieser Kasse (DB + lokale Artefakte im App-Datenordner) und setzt den Erststart zurück. */
+export async function wipeLocalData(): Promise<void> {
+  await invoke("wipe_local_data");
+  db = null;
 }

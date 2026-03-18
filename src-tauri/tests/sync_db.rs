@@ -9,7 +9,7 @@ use common::{insert_test_kasse_and_lauf, insert_test_kundenabrechnung, setup_tes
 use std::env;
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore)]
+#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
 fn get_batch_returns_abrechnungslauf_id_and_items() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -24,7 +24,7 @@ fn get_batch_returns_abrechnungslauf_id_and_items() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore)]
+#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
 fn apply_batch_inserts_abrechnungen_and_buchungen_with_lauf_id() {
     let temp_slave = tempfile::TempDir::new().expect("temp slave");
     let path_slave = temp_slave.path().to_string_lossy().to_string();
@@ -74,7 +74,7 @@ fn apply_batch_inserts_abrechnungen_and_buchungen_with_lauf_id() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore)]
+#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
 fn apply_batch_rejects_different_abrechnungslauf_id() {
     let temp_slave = tempfile::TempDir::new().expect("temp slave");
     let path_slave = temp_slave.path().to_string_lossy().to_string();
@@ -110,4 +110,64 @@ fn apply_batch_rejects_different_abrechnungslauf_id() {
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.contains("anderer Abrechnungslauf") || err.contains("Abrechnungslauf"));
+}
+
+#[test]
+#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+fn update_last_sent_storno_creates_sync_state_row_if_missing() {
+    let (_temp, _app, handle) = setup_test_app();
+    let (kassen_id, _lauf_id) = insert_test_kasse_and_lauf(&handle);
+
+    // Insert one storno for this kasse.
+    let path = app_lib::db::db_path(&handle).expect("db_path");
+    let conn = rusqlite::Connection::open(&path).expect("open db");
+    let storno_id = uuid::Uuid::new_v4().to_string();
+    let buchung_id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now()
+        .format("%Y-%m-%dT%H:%M:%S%.fZ")
+        .to_string();
+    conn.execute(
+        "INSERT INTO stornos (id, buchung_id, kassen_id, zeitstempel) VALUES (?1, ?2, ?3, ?4)",
+        rusqlite::params![&storno_id, &buchung_id, &kassen_id, &now],
+    )
+    .expect("insert storno");
+
+    // sync_state row for peer must be created by update_last_sent_storno.
+    let peer_id = "peer-1";
+    sync_db::update_last_sent_storno(&handle, peer_id, &now).expect("update_last_sent_storno");
+
+    let v: Option<String> = conn
+        .query_row(
+            "SELECT last_sent_storno_zeitstempel FROM sync_state WHERE peer_kassen_id = ?1",
+            rusqlite::params![peer_id],
+            |r| r.get(0),
+        )
+        .ok();
+    assert_eq!(v.as_deref(), Some(now.as_str()));
+}
+
+#[test]
+#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+fn get_max_storno_zeitstempel_for_kasse_returns_max() {
+    let (_temp, _app, handle) = setup_test_app();
+    let (kassen_id, _lauf_id) = insert_test_kasse_and_lauf(&handle);
+
+    let path = app_lib::db::db_path(&handle).expect("db_path");
+    let conn = rusqlite::Connection::open(&path).expect("open db");
+
+    let ts1 = "2026-01-01T10:00:00.000Z".to_string();
+    let ts2 = "2026-01-01T11:00:00.000Z".to_string();
+    for ts in [&ts1, &ts2] {
+        let storno_id = uuid::Uuid::new_v4().to_string();
+        let buchung_id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO stornos (id, buchung_id, kassen_id, zeitstempel) VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![&storno_id, &buchung_id, &kassen_id, ts],
+        )
+        .expect("insert storno");
+    }
+
+    let max_ts = sync_db::get_max_storno_zeitstempel_for_kasse(&handle, &kassen_id)
+        .expect("get_max_storno_zeitstempel_for_kasse");
+    assert_eq!(max_ts.as_deref(), Some(ts2.as_str()));
 }

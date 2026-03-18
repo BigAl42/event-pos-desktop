@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { useSyncData } from "../SyncDataContext";
 import {
   getConfig,
-  getSyncStatus,
+  getAbrechnungsläufe,
   getJoinRequests,
   removePeerFromNetwork,
   discoverMasters,
   setConfig,
   joinNetwork,
   startSyncConnections,
-  type SyncStatusEntry,
   type DiscoveredMaster,
 } from "../db";
+import { useSyncStatus } from "../SyncStatusContext";
 import "./Startseite.css";
 
 const DEFAULT_SYNC_PORT = 8766;
@@ -63,9 +62,12 @@ export default function Startseite({
   onOpenJoinAnfragen,
 }: Props) {
   const [role, setRole] = useState<string | null>(null);
-  const [syncEntries, setSyncEntries] = useState<SyncStatusEntry[]>([]);
-  const [slaveConsiderConnected, setSlaveConsiderConnected] = useState(false);
-  const [slaveDisconnectTimerActive, setSlaveDisconnectTimerActive] = useState(false);
+  const { entries: syncEntries, isConnected: slaveConnected, syncError, notConfigured, refresh } =
+    useSyncStatus();
+  const [activeLaufId, setActiveLaufId] = useState<string | null>(null);
+  const [activeLaufName, setActiveLaufName] = useState<string | null>(null);
+  const [closeoutOkFor, setCloseoutOkFor] = useState<string | null>(null);
+  const [closeoutOkAt, setCloseoutOkAt] = useState<string | null>(null);
   const [discoveredMasters, setDiscoveredMasters] = useState<DiscoveredMaster[]>([]);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [joinDialogMaster, setJoinDialogMaster] = useState<DiscoveredMaster | null>(null);
@@ -75,42 +77,35 @@ export default function Startseite({
   const [joinMessage, setJoinMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [pendingJoinCount, setPendingJoinCount] = useState(0);
   const [removingPeerId, setRemovingPeerId] = useState<string | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
   const [confirmPeerId, setConfirmPeerId] = useState<string | null>(null);
 
   const isMaster = role === "master";
-  const syncSummary =
-    syncEntries.length === 0
-      ? null
-      : { total: syncEntries.length, connected: syncEntries.filter((e) => e.connected).length };
-
-  const slaveConnected =
-    role === "slave" &&
-    (syncSummary !== null && syncSummary.connected > 0 ? true : slaveConsiderConnected);
-
-  useEffect(() => {
-    if (role !== "slave") {
-      setSlaveConsiderConnected(false);
-      setSlaveDisconnectTimerActive(false);
-      return;
-    }
-    if (syncSummary !== null && syncSummary.connected > 0) {
-      setSlaveConsiderConnected(true);
-      setSlaveDisconnectTimerActive(false);
-      return;
-    }
-    if (!slaveConsiderConnected || slaveDisconnectTimerActive) return;
-    setSlaveDisconnectTimerActive(true);
-    const t = setTimeout(() => {
-      setSlaveConsiderConnected(false);
-      setSlaveDisconnectTimerActive(false);
-    }, 8000);
-    return () => clearTimeout(t);
-  }, [role, syncSummary, slaveConsiderConnected, slaveDisconnectTimerActive]);
 
   useEffect(() => {
     getConfig("role").then(setRole);
   }, []);
+
+  useEffect(() => {
+    if (role !== "slave") {
+      setActiveLaufId(null);
+      setActiveLaufName(null);
+      setCloseoutOkFor(null);
+      setCloseoutOkAt(null);
+      return;
+    }
+    getAbrechnungsläufe()
+      .then((läufe) => {
+        const aktiver = läufe.find((l) => l.is_aktiv);
+        setActiveLaufId(aktiver ? aktiver.id : null);
+        setActiveLaufName(aktiver ? aktiver.name : null);
+      })
+      .catch(() => {
+        setActiveLaufId(null);
+        setActiveLaufName(null);
+      });
+    getConfig("closeout_ok_for_lauf_id").then((v) => setCloseoutOkFor(v ?? null)).catch(() => setCloseoutOkFor(null));
+    getConfig("closeout_ok_at").then((v) => setCloseoutOkAt(v ?? null)).catch(() => setCloseoutOkAt(null));
+  }, [role]);
 
   useEffect(() => {
     if (role !== "slave") return;
@@ -183,21 +178,6 @@ export default function Startseite({
     }
   }
 
-  useEffect(() => {
-    function load() {
-      getSyncStatus()
-        .then(setSyncEntries)
-        .then(() => setSyncError(null))
-        .catch((e) => {
-          setSyncError(String(e));
-          setSyncEntries([]);
-        });
-    }
-    load();
-    const id = setInterval(load, 3500);
-    return () => clearInterval(id);
-  }, []);
-
   async function handleRemovePeerFromNetwork(peerId: string) {
     // #region agent log
     fetch("http://127.0.0.1:7475/ingest/339f8301-dff1-46a5-b3e4-2b85e31fc48f", {
@@ -240,7 +220,7 @@ export default function Startseite({
       // #endregion agent log
 
       await removePeerFromNetwork(peerId);
-      getSyncStatus().then(setSyncEntries);
+      refresh();
     } finally {
       setRemovingPeerId(null);
     }
@@ -258,23 +238,9 @@ export default function Startseite({
         )}
         {syncError && (
           <p className="startseite-connection startseite-connection-warn">
-            {syncError.includes("Eigene Sync-URL nicht konfiguriert") ||
-            syncError.includes("Hauptkassen-URL nicht konfiguriert")
+            {notConfigured
               ? "Sync noch nicht vollständig eingerichtet – bitte Einstellungen prüfen."
               : "Sync-Status aktuell nicht abrufbar. Bitte Einstellungen prüfen oder Anwendung neu starten."}
-          </p>
-        )}
-        {!syncError && syncSummary !== null && (
-          <p
-            className={
-              syncSummary.connected > 0
-                ? "startseite-connection startseite-connection-ok"
-                : "startseite-connection startseite-connection-warn"
-            }
-          >
-            {syncSummary.connected > 0
-              ? `Verbunden mit ${syncSummary.connected} von ${syncSummary.total} Kassen`
-              : `Nicht verbunden (0 von ${syncSummary.total} Kassen)`}
           </p>
         )}
       </header>
@@ -319,7 +285,7 @@ export default function Startseite({
         </section>
       )}
 
-      {role === "slave" && (
+      {role === "slave" && (!slaveConnected || !!syncError) && (
         <section
           className={
             slaveConnected
@@ -328,11 +294,6 @@ export default function Startseite({
           }
         >
           <h2 className="startseite-join-title">Mit Hauptkasse verbinden</h2>
-          {!slaveConnected && syncSummary !== null && syncSummary.total > 0 && (
-            <p className="startseite-join-disconnect-hint">
-              Verbindung zur Hauptkasse wurde getrennt – bitte erneut verbinden.
-            </p>
-          )}
           {slaveConnected ? (
             <>
               <p className="startseite-join-connected">Mit Hauptkasse verbunden.</p>
@@ -373,6 +334,31 @@ export default function Startseite({
               )}
             </>
           )}
+        </section>
+      )}
+
+      {role === "slave" && (
+        <section className="startseite-closeout-section">
+          <h2 className="startseite-closeout-title">Abmelden (Lauf fertig)</h2>
+          <p className="startseite-closeout-hint">
+            Wenn deine Schicht zu Ende ist, fordere in den Einstellungen eine Closeout-Bestätigung der Hauptkasse an.
+          </p>
+          <p className="startseite-closeout-status">
+            Aktiver Lauf: <strong>{activeLaufName ?? "—"}</strong>
+            {" · "}
+            Closeout:{" "}
+            {closeoutOkAt ? (
+              <strong>
+                OK seit {new Date(closeoutOkAt).toLocaleString("de-DE")}
+                {activeLaufId && closeoutOkFor === activeLaufId ? "" : " (nicht für aktiven Lauf)"}
+              </strong>
+            ) : (
+              <strong>nicht angefragt</strong>
+            )}
+          </p>
+          <button type="button" className="startseite-closeout-btn" onClick={onOpenEinstellungen}>
+            Closeout anfragen (Einstellungen öffnen)
+          </button>
         </section>
       )}
 

@@ -2,8 +2,8 @@
 
 use crate::db;
 use crate::sync::protocol::{
-    AbrechnungslaufReset, Ack, HaendlerListUpdate, JoinReject, Message, RequestSlaveReset,
-    SyncState,
+    AbrechnungslaufReset, Ack, CloseoutApprove, CloseoutReject, CloseoutRequest, HaendlerListUpdate,
+    JoinReject, LeaveNetworkAck, LeaveNetworkRequest, Message, RequestSlaveReset, SyncState,
 };
 use crate::sync::status::SyncStatusState;
 use crate::sync::sync_db;
@@ -157,6 +157,16 @@ async fn handle_connection(
         return handle_request_slave_reset(app, req, write).await;
     }
 
+    // Slave → Master: Closeout-Anfrage (einmalige Verbindung, Antwort auf gleichen Kanal)
+    if let Message::CloseoutRequest(ref req) = &msg {
+        return handle_closeout_request(app, req, write).await;
+    }
+
+    // Slave → Master: Leave-Network (einmalige Verbindung, Antwort auf gleichen Kanal)
+    if let Message::LeaveNetworkRequest(ref req) = &msg {
+        return handle_leave_network_request(app, req, write).await;
+    }
+
     // Phase 3: Sync-Verbindung (jede Kasse)
     if let Message::SyncState(their_state) = &msg {
         let sync_conns = app.state::<SyncConnectionsState>().0.clone();
@@ -266,6 +276,182 @@ async fn handle_connection(
         }
         break;
     }
+
+    Ok(())
+}
+
+async fn handle_leave_network_request(
+    app: AppHandle,
+    req: &LeaveNetworkRequest,
+    mut write: impl futures_util::SinkExt<WsMessage> + Unpin,
+) -> Result<(), String> {
+    let is_master = db::get_config(&app, "role")
+        .map_err(|e| e.to_string())?
+        .as_deref()
+        == Some("master");
+    if !is_master {
+        let _ = write
+            .send(WsMessage::Text(
+                Message::Error(crate::sync::protocol::ErrorMsg {
+                    code: "forbidden".into(),
+                    message: "Leave-Network nur an Hauptkasse.".into(),
+                })
+                .to_json()
+                .unwrap_or_default(),
+            ))
+            .await;
+        return Ok(());
+    }
+
+    let my_kassen_id = db::get_config(&app, "kassen_id")
+        .map_err(|e| e.to_string())?
+        .ok_or("Kassen-ID nicht gesetzt")?;
+    if req.kassen_id == my_kassen_id {
+        let _ = write
+            .send(WsMessage::Text(
+                Message::Error(crate::sync::protocol::ErrorMsg {
+                    code: "invalid".into(),
+                    message: "Eigene Kasse kann nicht entfernt werden.".into(),
+                })
+                .to_json()
+                .unwrap_or_default(),
+            ))
+            .await;
+        return Ok(());
+    }
+
+    let path = db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    let _ = conn.execute(
+        "UPDATE kassen SET ws_url = NULL WHERE id = ?1 AND ws_url IS NOT NULL AND ws_url != ''",
+        rusqlite::params![&req.kassen_id],
+    );
+    let _ = conn.execute(
+        "DELETE FROM sync_state WHERE peer_kassen_id = ?1",
+        rusqlite::params![&req.kassen_id],
+    );
+
+    if let Some(sync_conns) = app.try_state::<SyncConnectionsState>() {
+        sync_conns.remove_peer(&req.kassen_id).await;
+    }
+    let _ = app.emit("sync-data-changed", ());
+
+    let _ = write
+        .send(WsMessage::Text(
+            Message::LeaveNetworkAck(LeaveNetworkAck {
+                kassen_id: req.kassen_id.clone(),
+            })
+            .to_json()
+            .unwrap_or_default(),
+        ))
+        .await;
+    Ok(())
+}
+
+/// Behandelt CloseoutRequest: Nur Master; prüft, ob Master alle Daten der Nebenkasse übernommen hat.
+async fn handle_closeout_request(
+    app: AppHandle,
+    req: &CloseoutRequest,
+    mut write: impl futures_util::SinkExt<WsMessage> + Unpin,
+) -> Result<(), String> {
+    let is_master = db::get_config(&app, "role")
+        .map_err(|e| e.to_string())?
+        .as_deref()
+        == Some("master");
+    if !is_master {
+        let _ = write
+            .send(WsMessage::Text(
+                Message::CloseoutReject(CloseoutReject {
+                    code: "forbidden".into(),
+                    message: "Closeout-Anfrage nur an Hauptkasse.".into(),
+                })
+                .to_json()
+                .unwrap_or_default(),
+            ))
+            .await;
+        return Ok(());
+    }
+
+    let path = db::db_path(&app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+
+    let our_max_seq: i64 = conn
+        .query_row(
+            "SELECT COALESCE(MAX(sequence), 0) FROM kundenabrechnung WHERE kassen_id = ?1",
+            rusqlite::params![&req.kassen_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    if our_max_seq < req.max_sequence {
+        let _ = write
+            .send(WsMessage::Text(
+                Message::CloseoutReject(CloseoutReject {
+                    code: "sync_pending".into(),
+                    message: "Noch nicht alle Buchungen dieser Nebenkasse auf der Hauptkasse. Bitte Sync abwarten.".into(),
+                })
+                .to_json()
+                .unwrap_or_default(),
+            ))
+            .await;
+        return Ok(());
+    }
+
+    let our_max_storno_ts_opt: Option<String> = conn
+        .query_row(
+            "SELECT MAX(zeitstempel) FROM stornos WHERE kassen_id = ?1",
+            rusqlite::params![&req.kassen_id],
+            |row| row.get(0),
+        )
+        .ok();
+    if let Some(ref required) = req.max_storno_zeitstempel {
+        let ok = our_max_storno_ts_opt
+            .as_deref()
+            .map(|m| m >= required.as_str())
+            .unwrap_or(false);
+        if !ok {
+            let _ = write
+                .send(WsMessage::Text(
+                    Message::CloseoutReject(CloseoutReject {
+                        code: "storno_sync_pending".into(),
+                        message:
+                            "Noch nicht alle Stornos dieser Nebenkasse auf der Hauptkasse. Bitte Sync abwarten."
+                                .into(),
+                    })
+                    .to_json()
+                    .unwrap_or_default(),
+                ))
+                .await;
+            return Ok(());
+        }
+    }
+
+    let active_lauf_id_opt: Option<String> = conn
+        .query_row(
+            "SELECT id FROM abrechnungslauf WHERE is_aktiv = 1 LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .ok();
+
+    if let Some(sync_status) = app.try_state::<SyncStatusState>() {
+        let now = chrono::Utc::now()
+            .format("%Y-%m-%dT%H:%M:%S%.fZ")
+            .to_string();
+        sync_status.set_closeout_ok(&req.kassen_id, active_lauf_id_opt.clone(), now);
+    }
+
+    let _ = write
+        .send(WsMessage::Text(
+            Message::CloseoutApprove(CloseoutApprove {
+                kassen_id: req.kassen_id.clone(),
+                master_has_sequence_upto: our_max_seq,
+                master_has_storno_upto: our_max_storno_ts_opt,
+                active_abrechnungslauf_id: active_lauf_id_opt,
+            })
+            .to_json()
+            .unwrap_or_default(),
+        ))
+        .await;
 
     Ok(())
 }
@@ -389,15 +575,19 @@ async fn handle_sync_connection(
     if let Some(sync_status) = app.try_state::<SyncStatusState>() {
         sync_status.set_connected(&peer_id, true);
         sync_status.set_peer_state(&peer_id, their_state.state.clone());
+        sync_status.set_peer_max_storno_zeitstempel(&peer_id, their_state.my_max_storno_zeitstempel.clone());
     }
 
     let my_kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
         .ok_or("kassen_id nicht gesetzt")?;
     let our_state_map = sync_db::get_sync_state_map(&app)?;
+    let my_max_storno_zeitstempel =
+        sync_db::get_max_storno_zeitstempel_for_kasse(&app, &my_kassen_id)?;
     let our_state = SyncState {
         my_kassen_id: my_kassen_id.clone(),
         state: our_state_map,
+        my_max_storno_zeitstempel,
     };
     let _ = write
         .send(WsMessage::Text(
@@ -436,8 +626,9 @@ async fn handle_sync_connection(
                     .unwrap_or_default(),
             ))
             .await;
-        if let Some(ref ts) = max_ts {
-            let _ = sync_db::update_last_sent_storno(&app, &peer_id, ts);
+        // last_sent_storno_zeitstempel wird erst nach Ack aktualisiert.
+        if let Some(sync_status) = app.try_state::<SyncStatusState>() {
+            sync_status.set_pending_storno_ack(&peer_id, max_ts);
         }
     }
 
@@ -460,6 +651,10 @@ async fn handle_sync_connection(
                     Message::SyncState(ref s) => {
                         if let Some(sync_status) = app.try_state::<SyncStatusState>() {
                             sync_status.set_peer_state(&peer_id, s.state.clone());
+                            sync_status.set_peer_max_storno_zeitstempel(
+                                &peer_id,
+                                s.my_max_storno_zeitstempel.clone(),
+                            );
                         }
                         for (kassen_id, &our_max) in &sync_db::get_sync_state_map(&app)? {
                             let their_max = s.state.get(kassen_id).copied().unwrap_or(0);
@@ -474,12 +669,16 @@ async fn handle_sync_connection(
                         }
                         let storno_batch = sync_db::get_stornos_to_send(&app, &peer_id)?;
                         if !storno_batch.stornos.is_empty() {
-                            let max_ts: Option<String> = storno_batch.stornos.iter().map(|s| s.zeitstempel.clone()).max_by(|a, b| a.cmp(b));
+                            let max_ts: Option<String> = storno_batch
+                                .stornos
+                                .iter()
+                                .map(|s| s.zeitstempel.clone())
+                                .max_by(|a, b| a.cmp(b));
                             let _ = write
                                 .send(WsMessage::Text(Message::StornoBatch(storno_batch).to_json().unwrap_or_default()))
                                 .await;
-                            if let Some(ref ts) = max_ts {
-                                let _ = sync_db::update_last_sent_storno(&app, &peer_id, ts);
+                            if let Some(sync_status) = app.try_state::<SyncStatusState>() {
+                                sync_status.set_pending_storno_ack(&peer_id, max_ts);
                             }
                         }
                     }
@@ -492,6 +691,7 @@ async fn handle_sync_connection(
                                 Message::Ack(Ack {
                                     peer_kassen_id: pid,
                                     last_sequence: max_seq,
+                                    last_storno_zeitstempel: None,
                                 })
                                 .to_json()
                                 .unwrap_or_default(),
@@ -501,6 +701,31 @@ async fn handle_sync_connection(
                     Message::StornoBatch(batch) => {
                         let _ = sync_db::apply_stornos(&app, &batch);
                         let _ = app.emit("sync-data-changed", ());
+                        let max_ts: Option<String> = batch
+                            .stornos
+                            .iter()
+                            .map(|s| s.zeitstempel.clone())
+                            .max_by(|a, b| a.cmp(b));
+                        let _ = write
+                            .send(WsMessage::Text(
+                                Message::Ack(Ack {
+                                    peer_kassen_id: peer_id.clone(),
+                                    last_sequence: 0,
+                                    last_storno_zeitstempel: max_ts,
+                                })
+                                .to_json()
+                                .unwrap_or_default(),
+                            ))
+                            .await;
+                    }
+                    Message::Ack(ack) => {
+                        if let Some(ref ts) = ack.last_storno_zeitstempel {
+                            if let Some(sync_status) = app.try_state::<SyncStatusState>() {
+                                if sync_status.consume_pending_storno_ack(&peer_id, ts) {
+                                    let _ = sync_db::update_last_sent_storno(&app, &peer_id, ts);
+                                }
+                            }
+                        }
                     }
                     _ => {}
                 }
@@ -516,9 +741,12 @@ async fn handle_sync_connection(
             }
             _ = sync_interval.tick() => {
                 if let Ok(our_state_map) = sync_db::get_sync_state_map(&app) {
+                    let my_max_storno_zeitstempel =
+                        sync_db::get_max_storno_zeitstempel_for_kasse(&app, &my_kassen_id).ok().flatten();
                     let our_state = SyncState {
                         my_kassen_id: my_kassen_id.clone(),
                         state: our_state_map,
+                        my_max_storno_zeitstempel,
                     };
                     let _ = write
                         .send(WsMessage::Text(Message::SyncState(our_state).to_json().unwrap_or_default()))

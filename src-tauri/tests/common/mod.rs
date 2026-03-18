@@ -82,3 +82,52 @@ pub fn insert_test_kundenabrechnung(
 
     (ka_id, buchung_id)
 }
+
+/// Legt einen Test-Händler in der Stammdatentabelle an.
+#[allow(dead_code)] // used in commands_db, but tests may be ignored on macOS
+pub fn insert_test_haendler(handle: &tauri::AppHandle, haendlernummer: &str) {
+    let path = db::db_path(handle).expect("db_path");
+    let conn = rusqlite::Connection::open(&path).expect("open db");
+    conn.execute(
+        "INSERT INTO haendler (haendlernummer, name, sort, vorname, nachname, strasse, hausnummer, plz, stadt, email)
+         VALUES (?1, 'Test Händler', 1, NULL, NULL, 'Testweg', '1', '12345', 'Teststadt', 'test@example.com')",
+        rusqlite::params![haendlernummer],
+    )
+    .expect("insert haendler");
+}
+
+/// Fügt eine Kundenabrechnung mit Buchung ein, **ohne** abrechnungslauf_id (NULL).
+/// Für Regressionstest: solche Belege dürfen nicht in get_recent_abrechnungen / get_haendler_umsatz erscheinen.
+#[allow(dead_code)] // used in commands_db, not in sync_db
+pub fn insert_test_kundenabrechnung_without_lauf(handle: &tauri::AppHandle, kassen_id: &str) -> (String, String) {
+    let ka_id = uuid::Uuid::new_v4().to_string();
+    let buchung_id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now()
+        .format("%Y-%m-%dT%H:%M:%S%.fZ")
+        .to_string();
+
+    let path = db::db_path(handle).expect("db_path");
+    let conn = rusqlite::Connection::open(&path).expect("open db");
+
+    let sequence: i64 = conn
+        .query_row(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM kundenabrechnung WHERE kassen_id = ?1",
+            rusqlite::params![kassen_id],
+            |r| r.get(0),
+        )
+        .expect("sequence");
+
+    conn.execute(
+        "INSERT INTO kundenabrechnung (id, kassen_id, person1_name, person2_name, zeitstempel, belegnummer, sequence, abrechnungslauf_id) VALUES (?1, ?2, 'A', 'B', ?3, 'BELEG-NULL', ?4, NULL)",
+        rusqlite::params![&ka_id, kassen_id, &now, sequence],
+    )
+    .expect("insert kundenabrechnung");
+
+    conn.execute(
+        "INSERT INTO buchungen (id, kundenabrechnung_id, haendlernummer, betrag, bezeichnung) VALUES (?1, ?2, 'H99', 99.0, 'Ohne Lauf')",
+        rusqlite::params![&buchung_id, &ka_id],
+    )
+    .expect("insert buchung");
+
+    (ka_id, buchung_id)
+}

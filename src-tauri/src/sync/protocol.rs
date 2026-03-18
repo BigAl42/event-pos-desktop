@@ -27,6 +27,16 @@ pub enum Message {
     AbrechnungslaufReset(AbrechnungslaufReset),
     /// Slave → Master: Anfrage, lokalen Abrechnungslauf zu leeren (Master prüft Sync-Stand und sendet ggf. AbrechnungslaufReset)
     RequestSlaveReset(RequestSlaveReset),
+    /// Slave → Master: Closeout/Abmelden-Anfrage (Master bestätigt, dass alle Daten angekommen sind)
+    CloseoutRequest(CloseoutRequest),
+    /// Master → Slave: Closeout bestätigt
+    CloseoutApprove(CloseoutApprove),
+    /// Master → Slave: Closeout abgelehnt
+    CloseoutReject(CloseoutReject),
+    /// Slave → Master: Nebenkasse verlässt das Netzwerk (Master entfernt Peer aus Liste).
+    LeaveNetworkRequest(LeaveNetworkRequest),
+    /// Master → Slave: Bestätigung, dass Peer entfernt wurde.
+    LeaveNetworkAck(LeaveNetworkAck),
     /// Allgemeiner Fehler
     Error(ErrorMsg),
 }
@@ -36,6 +46,43 @@ pub enum Message {
 pub struct RequestSlaveReset {
     pub kassen_id: String,
     pub max_sequence: i64,
+}
+
+/// Slave → Master: Closeout/Abmelden: Slave meldet seinen aktuellen Stand (Buchungen + Stornos),
+/// Master bestätigt, dass er mindestens bis zu diesen Marken übernommen hat.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CloseoutRequest {
+    pub kassen_id: String,
+    pub max_sequence: i64,
+    /// MAX(zeitstempel) der Stornos dieser Kasse (oder None, falls keine Stornos existieren).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_storno_zeitstempel: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CloseoutApprove {
+    pub kassen_id: String,
+    pub master_has_sequence_upto: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub master_has_storno_upto: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_abrechnungslauf_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CloseoutReject {
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeaveNetworkRequest {
+    pub kassen_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeaveNetworkAck {
+    pub kassen_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -83,6 +130,8 @@ pub struct HaendlerInfo {
     pub plz: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stadt: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,6 +158,9 @@ pub struct ErrorMsg {
 pub struct SyncState {
     pub my_kassen_id: String,
     pub state: HashMap<String, i64>,
+    /// Optional: MAX(zeitstempel) aller Stornos dieser Kasse (wird für Laufwechsel-Gates genutzt).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub my_max_storno_zeitstempel: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,6 +200,9 @@ pub struct BuchungRow {
 pub struct Ack {
     pub peer_kassen_id: String,
     pub last_sequence: i64,
+    /// Optional: Bestätigt, bis zu welchem Storno-Zeitstempel der Empfänger Stornos angewendet hat.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_storno_zeitstempel: Option<String>,
 }
 
 /// Phase 4: Storno-Sync

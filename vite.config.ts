@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,
+  base: process.env.TAURI_ENV_PLATFORM ? "./" : "/",
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT, 10) : 1420,
     strictPort: !process.env.PORT,

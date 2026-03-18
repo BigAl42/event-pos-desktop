@@ -13,6 +13,9 @@ src-tauri/gen/schemas
 *.swo
 *~
 
+# Cursor / AI artifacts
+.cursor/plans/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -34,6 +37,12 @@ tmp/
 # Tauri
 src-tauri/WixTools/
 *.rs.bk
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Local exports/artifacts
+src-tauri/*.csv
 
 # Test / coverage (optional)
 coverage/

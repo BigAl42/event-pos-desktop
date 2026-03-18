@@ -79,6 +79,8 @@ describe("createKundenabrechnung", () => {
         { id: "lauf-1", name: "L", start_zeitpunkt: "", end_zeitpunkt: null, is_aktiv: true },
       ] as never); // get_abrechnungslaeufe
     mockLoad.mockResolvedValue({
+      path: "/tmp/test.db",
+      close: vi.fn().mockResolvedValue(undefined),
       execute: mockExecute,
       select: mockSelect,
     });
@@ -119,5 +121,121 @@ describe("createKundenabrechnung", () => {
     expect(buchungCalls[0][1][2]).toBe("H1");
     expect(buchungCalls[0][1][3]).toBe(10.5);
     expect(buchungCalls[0][1][4]).toBe("Test");
+  });
+});
+
+describe("isInitializedFromMaster", () => {
+  let mockExecute: ReturnType<typeof vi.fn>;
+  let mockSelect: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    mockInvoke.mockReset();
+    mockLoad.mockReset();
+    mockExecute = vi.fn().mockResolvedValue(undefined);
+    mockSelect = vi.fn().mockResolvedValue([]);
+    mockInvoke.mockResolvedValue("/tmp/test.db" as never);
+    mockLoad.mockResolvedValue({
+      path: "/tmp/test.db",
+      close: vi.fn().mockResolvedValue(undefined),
+      execute: mockExecute,
+      select: mockSelect,
+    });
+  });
+
+  it("returns true when initialized_from_master is true", async () => {
+    mockSelect.mockResolvedValue([{ value: "true" }]);
+    const { isInitializedFromMaster } = await import("./db");
+    const result = await isInitializedFromMaster();
+    expect(result).toBe(true);
+  });
+
+  it("returns false when initialized_from_master is false", async () => {
+    mockSelect.mockResolvedValue([{ value: "false" }]);
+    const { isInitializedFromMaster } = await import("./db");
+    const result = await isInitializedFromMaster();
+    expect(result).toBe(false);
+  });
+
+  it("returns true and sets flag when role is master", async () => {
+    mockSelect
+      .mockResolvedValueOnce([]) // initialized_from_master
+      .mockResolvedValueOnce([{ value: "master" }]); // role
+    const { isInitializedFromMaster } = await import("./db");
+    const result = await isInitializedFromMaster();
+    expect(result).toBe(true);
+    expect(mockExecute).toHaveBeenCalledWith(
+      expect.stringContaining("config"),
+      expect.arrayContaining(["initialized_from_master", "true"])
+    );
+  });
+
+  it("returns false when no flag and role is slave without master_ws_url", async () => {
+    mockSelect
+      .mockResolvedValueOnce([]) // initialized_from_master
+      .mockResolvedValueOnce([{ value: "slave" }]) // role
+      .mockResolvedValueOnce([]); // master_ws_url
+    const { isInitializedFromMaster } = await import("./db");
+    const result = await isInitializedFromMaster();
+    expect(result).toBe(false);
+  });
+});
+
+describe("hasKasse", () => {
+  let mockSelect: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    mockInvoke.mockReset();
+    mockLoad.mockReset();
+    mockSelect = vi.fn().mockResolvedValue([]);
+    mockInvoke.mockResolvedValue("/tmp/test.db" as never);
+    mockLoad.mockResolvedValue({
+      path: "/tmp/test.db",
+      close: vi.fn().mockResolvedValue(undefined),
+      execute: vi.fn().mockResolvedValue(undefined),
+      select: mockSelect,
+    });
+  });
+
+  it("returns true when kassen_id is set", async () => {
+    mockSelect.mockResolvedValue([{ value: "kassen-uuid-1" }]);
+    const { hasKasse } = await import("./db");
+    const result = await hasKasse();
+    expect(result).toBe(true);
+  });
+
+  it("returns false when kassen_id is not set", async () => {
+    mockSelect.mockResolvedValue([]);
+    const { hasKasse } = await import("./db");
+    const result = await hasKasse();
+    expect(result).toBe(false);
+  });
+});
+
+describe("getAbrechnung", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    mockInvoke.mockReset();
+  });
+
+  it("returns mapped rows from get_haendler_umsatz", async () => {
+    mockInvoke.mockResolvedValue([
+      { haendlernummer: "H1", summe: 100.5, anzahl: 3 },
+      { haendlernummer: "H2", summe: 50, anzahl: 1 },
+    ] as never);
+    const { getAbrechnung } = await import("./db");
+    const rows = await getAbrechnung();
+    expect(mockInvoke).toHaveBeenCalledWith("get_haendler_umsatz");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({ haendlernummer: "H1", summe: 100.5, anzahl: 3 });
+    expect(rows[1]).toEqual({ haendlernummer: "H2", summe: 50, anzahl: 1 });
+  });
+
+  it("returns empty array when backend returns empty", async () => {
+    mockInvoke.mockResolvedValue([] as never);
+    const { getAbrechnung } = await import("./db");
+    const rows = await getAbrechnung();
+    expect(rows).toEqual([]);
   });
 });

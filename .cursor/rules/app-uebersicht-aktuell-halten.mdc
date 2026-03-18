@@ -1,0 +1,27 @@
+---
+description: Hält die kurze App-Übersicht (APP_OVERVIEW.md) aktuell und kompakt.
+alwaysApply: true
+---
+
+# App-Übersicht aktuell halten (kurz & präzise)
+
+Wenn sich Anforderungen, UX-Flows oder Architektur ändern, muss `APP_OVERVIEW.md` **im selben Schritt** aktualisiert werden.
+
+- **Wann aktualisieren?**
+  - Neue/entfernte Views, neue Navigation/Drilldowns, geänderte Rollen (Master/Slave/Nebenkasse).
+  - Neue Commands/Backend-APIs, neue/angepasste Aggregationen.
+  - Änderungen an Datenmodell/Migrationen/SQLite-Speicherort.
+  - Neue Test-/Build-Skripte oder Commit-Qualitätsregeln.
+
+- **Wie aktualisieren (Qualitätskriterien)?**
+  - **Kurz**: bevorzugt Bulletpoints; keine langen Erklärtexte.
+  - **Präzise**: nur Dinge, die „wie funktioniert die App gerade?“ beantworten.
+  - **Stabil**: Begriffe/Dateipfade so wählen, dass sie länger gültig bleiben.
+  - **Pflegeleicht**: Zielgröße grob **< 120 Zeilen**; doppelte Details vermeiden (lieber auf bestehende Dateien verweisen).
+
+- **Mini-Checkliste**
+  - Passt „Phase/Stand“ noch?
+  - Stimmen Kern-Workflows (Kasse/Abrechnung/Einstellungen) und Rollen?
+  - Sind zentrale Pfade/Komponenten/Commands weiterhin korrekt benannt?
+  - Sind Regeln zu Read-only/Drilldowns/Aggregationen weiterhin erfüllt und ggf. ergänzt?
+

@@ -4,7 +4,6 @@ import {
   getAbrechnung,
   getAbrechnungsläufe,
   type HaendlerItem,
-  type AbrechnungZeile,
 } from "../db";
 import HaendlerListeMitUmsatz, { buildUmsatzMap } from "./HaendlerListeMitUmsatz";
 import "./HaendlerverwaltungView.css";
@@ -31,10 +30,10 @@ export default function HaendlerMasterUebersichtView({
       setLoading(true);
       setError("");
       try {
-        const [haendler, abrechnung] = await Promise.all<[HaendlerItem[], AbrechnungZeile[]]>([
+        const [haendler, abrechnung] = await Promise.all([
           getHaendlerList(),
           getAbrechnung(),
-        ]);
+        ] as const);
         setList(haendler);
         setUmsatz(buildUmsatzMap(abrechnung));
         const läufe = await getAbrechnungsläufe();

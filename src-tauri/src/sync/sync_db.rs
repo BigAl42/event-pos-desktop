@@ -199,7 +199,7 @@ pub fn apply_haendler_list(app: &AppHandle, haendler: &[HaendlerInfo]) -> Result
         .map_err(|e| e.to_string())?;
     for h in haendler {
         conn.execute(
-            "INSERT INTO haendler (haendlernummer, name, sort, vorname, nachname, strasse, hausnummer, plz, stadt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            "INSERT INTO haendler (haendlernummer, name, sort, vorname, nachname, strasse, hausnummer, plz, stadt, email) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             rusqlite::params![
                 &h.haendlernummer,
                 &h.name,
@@ -210,11 +210,28 @@ pub fn apply_haendler_list(app: &AppHandle, haendler: &[HaendlerInfo]) -> Result
                 &h.hausnummer,
                 &h.plz,
                 &h.stadt,
+                &h.email,
             ],
         )
         .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+pub fn get_max_storno_zeitstempel_for_kasse(
+    app: &AppHandle,
+    kassen_id: &str,
+) -> Result<Option<String>, String> {
+    let path = db::db_path(app)?;
+    let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    let ts: Option<String> = conn
+        .query_row(
+            "SELECT MAX(zeitstempel) FROM stornos WHERE kassen_id = ?1",
+            rusqlite::params![kassen_id],
+            |row| row.get(0),
+        )
+        .ok();
+    Ok(ts)
 }
 
 /// Stornos die wir diesem Peer noch nicht geschickt haben (zeitstempel > last_sent_storno_zeitstempel).
@@ -272,6 +289,11 @@ pub fn update_last_sent_storno(
 ) -> Result<(), String> {
     let path = db::db_path(app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
+    // sync_state kann bei reinem Storno-Transfer noch fehlen (z.B. keine Kundenabrechnungs-Batches ausgetauscht).
+    let _ = conn.execute(
+        "INSERT OR IGNORE INTO sync_state (peer_kassen_id, last_sequence, updated_at) VALUES (?1, 0, datetime('now'))",
+        rusqlite::params![peer_kassen_id],
+    );
     conn.execute(
         "UPDATE sync_state SET last_sent_storno_zeitstempel = ?1 WHERE peer_kassen_id = ?2",
         rusqlite::params![max_zeitstempel, peer_kassen_id],

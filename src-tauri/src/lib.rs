@@ -15,6 +15,7 @@ fn app_builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .manage(commands::MasterServerState(std::sync::Mutex::new(None)))
         .manage(commands::MdnsDaemonState(std::sync::Mutex::new(None)))
+        .manage(commands::SyncRuntimeState::default())
         .manage(crate::sync::status::SyncStatusState::new())
         .manage(crate::sync::server::SyncConnectionsState::new())
         .setup(|app| {
@@ -29,6 +30,9 @@ fn app_builder() -> tauri::Builder<tauri::Wry> {
         })
         .invoke_handler(tauri::generate_handler![
             commands::init_db,
+            commands::wipe_local_data,
+            commands::get_notfall_export_data,
+            commands::import_notfall_data,
             commands::get_join_token,
             commands::generate_join_token,
             commands::start_master_server,
@@ -38,6 +42,7 @@ fn app_builder() -> tauri::Builder<tauri::Wry> {
             commands::reject_join_request,
             commands::join_network,
             commands::start_sync_connections,
+            commands::get_sync_runtime_status,
             commands::get_haendler_list,
             commands::create_haendler,
             commands::update_haendler,
@@ -47,6 +52,7 @@ fn app_builder() -> tauri::Builder<tauri::Wry> {
             commands::get_recent_abrechnungen,
             commands::get_buchungen_for_abrechnung,
             commands::get_haendler_umsatz,
+            commands::get_haendler_abrechnung_pdf_data,
             commands::get_buchungen_for_haendler,
             commands::get_sync_status,
             commands::remove_peer_from_network,
@@ -56,6 +62,8 @@ fn app_builder() -> tauri::Builder<tauri::Wry> {
             commands::create_abrechnungslauf,
             commands::delete_abrechnungslauf,
             commands::request_slave_reset,
+            commands::request_closeout,
+            commands::leave_network,
         ])
 }
 

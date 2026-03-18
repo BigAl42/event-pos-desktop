@@ -410,9 +410,9 @@ export default function KasseView({ onBack }: Props) {
                 positionRefs.current[i].betrag = el;
               }}
               data-row-index={i}
-              type="number"
               inputMode="decimal"
-              step="0.01"
+              type="text"
+              pattern="[0-9]*[.,]?[0-9]*"
               placeholder="Betrag"
               value={p.betrag}
               onChange={(e) => updatePosition(i, "betrag", e.target.value)}

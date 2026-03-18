@@ -6,7 +6,7 @@ import {
   deleteHaendler,
 } from "../db";
 import type { HaendlerItem } from "../db";
-import { save } from "@tauri-apps/plugin-dialog";
+import { confirm, save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
 import {
   exportHaendlerCsv,
@@ -29,6 +29,7 @@ type FormState = {
   hausnummer: string;
   plz: string;
   stadt: string;
+  email: string;
   sort: string;
 };
 
@@ -41,6 +42,7 @@ const emptyForm: FormState = {
   hausnummer: "",
   plz: "",
   stadt: "",
+  email: "",
   sort: "",
 };
 
@@ -102,6 +104,7 @@ export default function HaendlerverwaltungView({ onBack }: Props) {
       hausnummer: h.hausnummer ?? "",
       plz: h.plz ?? "",
       stadt: h.stadt ?? "",
+      email: h.email ?? "",
       sort: h.sort != null ? String(h.sort) : "",
     });
   }
@@ -131,6 +134,7 @@ export default function HaendlerverwaltungView({ onBack }: Props) {
         hausnummer: form.hausnummer.trim() || null,
         plz: form.plz.trim() || null,
         stadt: form.stadt.trim() || null,
+        email: form.email.trim() || null,
       };
       if (editing !== null) {
         if (editing !== nummer) {
@@ -146,6 +150,7 @@ export default function HaendlerverwaltungView({ onBack }: Props) {
             hausnummer: params.hausnummer,
             plz: params.plz,
             stadt: params.stadt,
+            email: params.email,
           });
         }
       } else {
@@ -162,7 +167,13 @@ export default function HaendlerverwaltungView({ onBack }: Props) {
   }
 
   async function handleDelete(haendlernummer: string) {
-    if (!confirm(`Händler „${haendlernummer}“ wirklich löschen?`)) return;
+    const ok = await confirm(`Händler „${haendlernummer}“ wirklich löschen?`, {
+      title: "Händler löschen",
+      kind: "warning",
+      okLabel: "Löschen",
+      cancelLabel: "Abbrechen",
+    });
+    if (!ok) return;
     setError("");
     try {
       await deleteHaendler(haendlernummer);
@@ -241,6 +252,7 @@ export default function HaendlerverwaltungView({ onBack }: Props) {
             hausnummer: row.hausnummer || null,
             plz: row.plz || null,
             stadt: row.stadt || null,
+            email: row.email || null,
           });
           updated++;
         } else {
@@ -254,6 +266,7 @@ export default function HaendlerverwaltungView({ onBack }: Props) {
             hausnummer: row.hausnummer || null,
             plz: row.plz || null,
             stadt: row.stadt || null,
+            email: row.email || null,
           });
           created++;
           existingNummern.add(nummer);
@@ -389,6 +402,15 @@ export default function HaendlerverwaltungView({ onBack }: Props) {
             />
           </label>
         </div>
+        <label>
+          E-Mail (optional)
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            placeholder="name@example.com"
+          />
+        </label>
         <div className="haendlerverwaltung-form-row">
           <label>
             Straße

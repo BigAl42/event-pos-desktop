@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import {
   getRecentAbrechnungen,
   getBuchungenForAbrechnung,
@@ -86,7 +87,16 @@ export default function StornoView({ onBack }: Props) {
 
   async function handleStornoGanzeAbrechnung() {
     if (!selectedId || !hasNonStornierte) return;
-    if (!window.confirm("Gesamte Abrechnung stornieren? Alle nicht stornierten Positionen werden storniert.")) return;
+    const ok = await confirm(
+      "Gesamte Abrechnung stornieren? Alle nicht stornierten Positionen werden storniert.",
+      {
+        title: "Gesamte Abrechnung stornieren",
+        kind: "warning",
+        okLabel: "Stornieren",
+        cancelLabel: "Abbrechen",
+      }
+    );
+    if (!ok) return;
     setStornoInProgress("abrechnung");
     try {
       await stornoAbrechnung(selectedId);

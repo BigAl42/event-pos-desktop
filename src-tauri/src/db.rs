@@ -11,11 +11,10 @@ const ENV_INSTANCE: &str = "KASSEN_INSTANCE";
 /// Umgebungsvariable für Integrationstests: falls gesetzt, wird dieses Verzeichnis als DB-Basis genutzt.
 const ENV_TEST_DB_DIR: &str = "KASSEN_TEST_DB_DIR";
 
-/// Gibt den Pfad zur SQLite-Datenbank im App-Datenverzeichnis zurück.
-/// Mit Umgebungsvariable KASSEN_INSTANCE (z. B. "master", "slave") wird ein Unterordner genutzt,
-/// sodass zwei Kassen lokal parallel laufen können.
+/// Gibt das Verzeichnis zurück, in dem die DB und weitere lokale Artefakte dieser Instanz liegen.
+/// Mit Umgebungsvariable KASSEN_INSTANCE (z. B. "master", "slave") wird ein Unterordner genutzt.
 /// In Tests kann KASSEN_TEST_DB_DIR gesetzt werden, um ein temporäres Verzeichnis zu nutzen.
-pub fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
+pub fn instance_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let base = if let Ok(test_dir) = std::env::var(ENV_TEST_DB_DIR) {
         PathBuf::from(test_dir)
     } else {
@@ -23,6 +22,7 @@ pub fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
             .app_data_dir()
             .map_err(|e: tauri::Error| e.to_string())?
     };
+    fs::create_dir_all(&base).map_err(|e| e.to_string())?;
     let dir = match std::env::var(ENV_INSTANCE) {
         Ok(instance) if !instance.trim().is_empty() => {
             let sub = base.join(instance.trim());
@@ -31,7 +31,15 @@ pub fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
         }
         _ => base,
     };
-    Ok(dir.join(DB_FILENAME))
+    Ok(dir)
+}
+
+/// Gibt den Pfad zur SQLite-Datenbank im App-Datenverzeichnis zurück.
+/// Mit Umgebungsvariable KASSEN_INSTANCE (z. B. "master", "slave") wird ein Unterordner genutzt,
+/// sodass zwei Kassen lokal parallel laufen können.
+/// In Tests kann KASSEN_TEST_DB_DIR gesetzt werden, um ein temporäres Verzeichnis zu nutzen.
+pub fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(instance_dir(app)?.join(DB_FILENAME))
 }
 
 /// Führt alle ausstehenden Migrationen aus und gibt den DB-Pfad zurück.
@@ -125,6 +133,18 @@ pub fn init_db(app: &AppHandle) -> Result<String, String> {
         run_migration_006(&conn)?;
     }
 
+    // Händler: optionale eMail-Adresse
+    let applied_007: bool = conn
+        .query_row(
+            "SELECT COUNT(*) FROM schema_migrations WHERE version='007_haendler_email'",
+            [],
+            |row| Ok(row.get::<_, i32>(0)? == 1),
+        )
+        .map_err(|e| e.to_string())?;
+    if !applied_007 {
+        run_migration_007(&conn)?;
+    }
+
     Ok(path_str)
 }
 
@@ -160,6 +180,12 @@ fn run_migration_005(conn: &Connection) -> Result<(), String> {
 
 fn run_migration_006(conn: &Connection) -> Result<(), String> {
     let sql = include_str!("../migrations/006_abrechnungslauf.sql");
+    conn.execute_batch(sql).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn run_migration_007(conn: &Connection) -> Result<(), String> {
+    let sql = include_str!("../migrations/007_haendler_email.sql");
     conn.execute_batch(sql).map_err(|e| e.to_string())?;
     Ok(())
 }
