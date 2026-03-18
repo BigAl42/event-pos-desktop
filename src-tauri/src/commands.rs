@@ -1853,12 +1853,18 @@ pub fn get_abrechnungsläufe(app: tauri::AppHandle) -> Result<Vec<Abrechnungslau
 pub async fn create_abrechnungslauf(
     app: tauri::AppHandle,
     name: String,
+    ignore_peers: Option<Vec<String>>,
 ) -> Result<String, String> {
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
     let now = chrono::Utc::now()
         .format("%Y-%m-%dT%H:%M:%S%.fZ")
         .to_string();
+
+    let ignore_set: std::collections::HashSet<&str> = ignore_peers
+        .as_deref()
+        .map(|v| v.iter().map(String::as_str).collect())
+        .unwrap_or_default();
 
     // Sicherheits-Gate: Auf der Hauptkasse erst neuen Lauf starten, wenn alle verbundenen Peers vollständig übernommen sind.
     let role = db::get_config(&app, "role")
@@ -1875,6 +1881,9 @@ pub async fn create_abrechnungslauf(
                     if peer_id == my_id {
                         continue;
                     }
+                }
+                if ignore_set.contains(peer_id.as_str()) {
+                    continue;
                 }
                 let status = sync_status.get(&peer_id);
                 let peer_state = status

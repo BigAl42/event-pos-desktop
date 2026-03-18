@@ -212,6 +212,12 @@
   cursor: not-allowed;
 }
 
+.abrechnung-peer-ignore {
+  border-color: #b45309 !important;
+  color: #b45309;
+  background: #fff;
+}
+
 .abrechnung-danger {
   border-color: #a51d2d !important;
   color: #a51d2d;
@@ -339,4 +345,18 @@
   margin: 0.35rem 0 0.75rem;
   color: #6b7280;
   font-size: 0.9rem;
+}
+
+.abrechnung-export-summary {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.abrechnung-export-summary ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.25rem;
 }

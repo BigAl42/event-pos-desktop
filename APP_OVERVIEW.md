@@ -15,7 +15,7 @@
 - **Abrechnung**:
   - Summen pro Händlernummer (Backend-Aggregat).
   - Pro Händler: **1-seitige A4-PDF-Abrechnung** (Stammdaten inkl. Adresse + eMail, Abrechnungslauf-Daten + Gesamtsumme groß; keine Einzelbuchungen).
-  - **Hauptkasse**: **„Abrechnungslauf abschließen“** (Wizard): Closeout aller Slaves prüfen → Exporte erzwingen (PDF-Batch + Notfall-Export) → neuen Lauf starten (`create_abrechnungslauf`, löscht Bewegungsdaten).
+  - **Hauptkasse**: **„Abrechnungslauf abschließen“** (Wizard): Closeout prüfen (optional „Trotzdem abschließen“ mit Peer-Ignore) → Exporte (PDF-Batch + Notfall-Export) → Export-Zusammenfassung in Step 3 → neuen Lauf starten (`create_abrechnungslauf`, optional `ignore_peers`).
 - **Einstellungen**: in klaren, einklappbaren Bereichen (Akkordeon) organisiert; Anzeige dieser Kasse und Rolle.
   - **Nebenkasse**: Join (per URL/mDNS + Join-Code), Sync starten, **Closeout/Abmelden (Lauf fertig)** anfragen, optional **entkoppeln**.
   - **Hauptkasse**: WebSocket-Server starten, Join-Requests approve/reject, Sync starten, Abrechnungsläufe starten/löschen.
@@ -29,7 +29,7 @@
 - **Laufende Synchronisation**: WebSocket-Sync tauscht **Kundenabrechnungen (sequenzbasiert)** und **Stornos** aus; Watermarks für Stornos werden per Ack bestätigt.
 - **Abmelden (Closeout)**: Nebenkasse kann den Master bestätigen lassen, dass **alle Daten dieser Kasse angekommen sind** (Buchungen + Stornos), bevor sie sich abmeldet/entkoppelt; Master nutzt Closeout als Gate beim Abschluss.
 - **Entkoppeln**: Beim „Abmelden & entkoppeln“ informiert die Nebenkasse die Hauptkasse, damit sie aus der Peer-Liste verschwindet (ws_url wird auf der Hauptkasse entfernt).
-- **Abrechnungslauf-Wechsel**: Auf der Hauptkasse ist `create_abrechnungslauf` **geblockt**, solange verbundene Peers noch nicht vollständig übernommen sind (Schutz vor Datenverlust durch Reset-Broadcast).
+- **Abrechnungslauf-Wechsel**: Auf der Hauptkasse ist `create_abrechnungslauf` **geblockt**, solange verbundene Peers noch nicht vollständig übernommen sind; Admin kann „Trotzdem abschließen (Peers ignorieren)“ mit Bestätigung nutzen (`ignore_peers`).
 
 ## Architektur – High Level
 - **Frontend**: Vite + React + TypeScript.
@@ -55,6 +55,5 @@
 - **Build**: `npm run build` → `npm run tauri build`
 
 ## Offene Roadmap (kurz)
-- **Robustheit/UX**: „Abrechnungslauf abschließen“ weiter verfeinern (z.B. Export-Zusammenfassung, besserer Peer-Ignore/Admin-Flow).
 - **Historie**: Abrechnungsläufe behalten/auswerten (statt Bewegungsdaten zu löschen) – falls gewünscht.
 

@@ -607,8 +607,11 @@ export async function getHaendlerAbrechnungPdfData(
   };
 }
 
-export async function createAbrechnungslauf(name: string): Promise<string> {
-  return invoke<string>("create_abrechnungslauf", { name });
+export async function createAbrechnungslauf(name: string, ignorePeers?: string[]): Promise<string> {
+  return invoke<string>("create_abrechnungslauf", {
+    name,
+    ignore_peers: ignorePeers?.length ? ignorePeers : undefined,
+  });
 }
 
 export async function deleteAbrechnungslauf(id: string): Promise<string> {

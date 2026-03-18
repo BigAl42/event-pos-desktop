@@ -15,7 +15,7 @@ import { useSyncData } from "../SyncDataContext";
 import "./AbrechnungView.css";
 import { HaendlerAbrechnungPdf } from "./HaendlerAbrechnungPdf";
 import { exportElementAsPdf, exportElementAsPdfToPath, sanitizeFilename } from "../utils/pdfExport";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { confirm, open, save } from "@tauri-apps/plugin-dialog";
 import { join } from "@tauri-apps/api/path";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 
@@ -40,6 +40,11 @@ export default function AbrechnungView({ onBack }: Props) {
   const [syncLoading, setSyncLoading] = useState(false);
   const [exportPdfDone, setExportPdfDone] = useState(false);
   const [exportNotfallDone, setExportNotfallDone] = useState(false);
+  const [exportSummary, setExportSummary] = useState<{ pdfCount: number | null; notfallPath: string | null }>({
+    pdfCount: null,
+    notfallPath: null,
+  });
+  const [ignoredPeersForAbschluss, setIgnoredPeersForAbschluss] = useState<string[]>([]);
   const [newLaufName, setNewLaufName] = useState("");
 
   useEffect(() => {
@@ -196,11 +201,20 @@ export default function AbrechnungView({ onBack }: Props) {
     return { ok: missing.length === 0, reason: null as string | null, missing };
   }, [aktuellerLaufId, relevantPeers]);
 
+  const canProceedDespiteCloseout = useMemo(
+    () =>
+      syncGate.ok ||
+      syncGate.missing.every((id) => ignoredPeersForAbschluss.includes(id)),
+    [syncGate.ok, syncGate.missing, ignoredPeersForAbschluss]
+  );
+
   function openAbschlussWizard() {
     setAbschlussError(null);
     setAbschlussBusy(false);
     setExportPdfDone(false);
     setExportNotfallDone(false);
+    setExportSummary({ pdfCount: null, notfallPath: null });
+    setIgnoredPeersForAbschluss([]);
     setNewLaufName(
       `Kassentag ${new Date().toLocaleDateString("de-DE", { year: "numeric", month: "2-digit", day: "2-digit" })}`
     );
@@ -213,7 +227,10 @@ export default function AbrechnungView({ onBack }: Props) {
     setAbschlussError(null);
     try {
       const ok = await handleCreateAllPdfs();
-      if (ok) setExportPdfDone(true);
+      if (ok) {
+        setExportPdfDone(true);
+        setExportSummary((prev) => ({ ...prev, pdfCount: rows.length }));
+      }
     } catch (e) {
       setAbschlussError(String(e));
     }
@@ -239,6 +256,7 @@ export default function AbrechnungView({ onBack }: Props) {
       if (!path) return;
       await writeTextFile(path, JSON.stringify(dto, null, 2));
       setExportNotfallDone(true);
+      setExportSummary((prev) => ({ ...prev, notfallPath: path }));
     } catch (e) {
       setAbschlussError(String(e));
     } finally {
@@ -254,7 +272,7 @@ export default function AbrechnungView({ onBack }: Props) {
     setAbschlussError(null);
     setAbschlussBusy(true);
     try {
-      await createAbrechnungslauf(newLaufName.trim());
+      await createAbrechnungslauf(newLaufName.trim(), ignoredPeersForAbschluss);
       // Refresh UI state (neuer Lauf + leere Bewegungsdaten)
       const [r, läufe] = await Promise.all([getAbrechnung(), getAbrechnungsläufe()]);
       setRows(r);
@@ -370,8 +388,8 @@ export default function AbrechnungView({ onBack }: Props) {
                 type="button"
                 className={abschlussStep === 2 ? "active" : ""}
                 onClick={() => setAbschlussStep(2)}
-                disabled={!syncGate.ok}
-                title={!syncGate.ok ? "Closeout muss zuerst OK sein." : ""}
+                disabled={!canProceedDespiteCloseout}
+                title={!canProceedDespiteCloseout ? "Closeout muss zuerst OK sein oder Peers ignorieren." : ""}
               >
                 2) Export
               </button>
@@ -379,8 +397,14 @@ export default function AbrechnungView({ onBack }: Props) {
                 type="button"
                 className={abschlussStep === 3 ? "active" : ""}
                 onClick={() => setAbschlussStep(3)}
-                disabled={!syncGate.ok || !exportPdfDone || !exportNotfallDone}
-                title={!syncGate.ok ? "Closeout muss zuerst OK sein." : !exportPdfDone || !exportNotfallDone ? "Exporte fehlen." : ""}
+                disabled={!canProceedDespiteCloseout || !exportPdfDone || !exportNotfallDone}
+                title={
+                  !canProceedDespiteCloseout
+                    ? "Closeout muss zuerst OK sein oder Peers ignorieren."
+                    : !exportPdfDone || !exportNotfallDone
+                      ? "Exporte fehlen."
+                      : ""
+                }
               >
                 3) Neuer Lauf
               </button>
@@ -397,10 +421,42 @@ export default function AbrechnungView({ onBack }: Props) {
                   <button type="button" onClick={() => refreshSyncGate().catch((e) => setAbschlussError(String(e)))} disabled={syncLoading}>
                     {syncLoading ? "Prüfe…" : "Neu prüfen"}
                   </button>
-                  <button type="button" onClick={() => setAbschlussStep(2)} disabled={!syncGate.ok}>
+                  {syncGate.missing.length > 0 && (
+                    <button
+                      type="button"
+                      className="abrechnung-peer-ignore"
+                      onClick={async () => {
+                        const names = syncGate.missing
+                          .map((id) => relevantPeers.find((p) => p.peer_id === id)?.name || id)
+                          .join(", ");
+                        const ok = await confirm(
+                          `Folgende Nebenkassen haben noch keinen Closeout: ${names}. Daten dieser Kassen können verloren gehen. Trotzdem abschließen?`,
+                          { title: "Peers ignorieren?", kind: "warning" }
+                        );
+                        if (ok) setIgnoredPeersForAbschluss(syncGate.missing);
+                      }}
+                      disabled={abschlussBusy}
+                    >
+                      Trotzdem abschließen (Peers ignorieren)
+                    </button>
+                  )}
+                  {ignoredPeersForAbschluss.length > 0 && (
+                    <button type="button" onClick={() => setIgnoredPeersForAbschluss([])} disabled={abschlussBusy}>
+                      Ignorierung aufheben
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setAbschlussStep(2)} disabled={!canProceedDespiteCloseout}>
                     Weiter
                   </button>
                 </div>
+                {ignoredPeersForAbschluss.length > 0 && (
+                  <p className="abrechnung-hinweis">
+                    Beim Abschluss werden folgende Peers ignoriert:{" "}
+                    {ignoredPeersForAbschluss
+                      .map((id) => relevantPeers.find((p) => p.peer_id === id)?.name || id)
+                      .join(", ")}
+                  </p>
+                )}
 
                 {relevantPeers.length === 0 ? (
                   <p className="abrechnung-leer">Keine Peers mit URL konfiguriert.</p>
@@ -490,6 +546,22 @@ export default function AbrechnungView({ onBack }: Props) {
                   Der aktive Lauf wird beendet (Ende-Zeitpunkt gesetzt), anschließend wird ein neuer Lauf angelegt und Bewegungsdaten
                   werden gelöscht.
                 </p>
+                {(exportSummary.pdfCount != null || exportSummary.notfallPath) && (
+                  <div className="abrechnung-export-summary">
+                    <strong>Export-Zusammenfassung</strong>
+                    <ul>
+                      {exportSummary.pdfCount != null && (
+                        <li>{exportSummary.pdfCount} PDFs erstellt.</li>
+                      )}
+                      {exportSummary.notfallPath && (
+                        <li>
+                          Notfall-Export gespeichert nach:{" "}
+                          {exportSummary.notfallPath.split(/[/\\]/).slice(-2).join("/") || exportSummary.notfallPath}
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
                 <label className="abrechnung-label">
                   Name des neuen Abrechnungslaufs
                   <input

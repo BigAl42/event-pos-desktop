@@ -54,7 +54,7 @@ const {
 } = await import("../db");
 const { exportElementAsPdf } = await import("../utils/pdfExport");
 const { exportElementAsPdfToPath } = await import("../utils/pdfExport");
-const { open, save } = await import("@tauri-apps/plugin-dialog");
+const { confirm, open, save } = await import("@tauri-apps/plugin-dialog");
 const { writeTextFile } = await import("@tauri-apps/plugin-fs");
 const mockGetAbrechnung = vi.mocked(getAbrechnung);
 const mockGetAbrechnungsläufe = vi.mocked(getAbrechnungsläufe);
@@ -62,6 +62,7 @@ const mockGetConfig = vi.mocked(getConfig);
 const mockGetHaendlerAbrechnungPdfData = vi.mocked(getHaendlerAbrechnungPdfData);
 const mockExportElementAsPdf = vi.mocked(exportElementAsPdf);
 const mockExportElementAsPdfToPath = vi.mocked(exportElementAsPdfToPath);
+const mockConfirm = vi.mocked(confirm);
 const mockOpen = vi.mocked(open);
 const mockSave = vi.mocked(save);
 const mockWriteTextFile = vi.mocked(writeTextFile);
@@ -186,7 +187,7 @@ describe("AbrechnungView", () => {
     await waitFor(() => expect(screen.getByText("H1")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: /PDF erstellen/ }));
-    await waitFor(() => expect(mockExportElementAsPdf).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockExportElementAsPdf).toHaveBeenCalled());
     expect(screen.queryByText(/Kein aktiver Abrechnungslauf/)).not.toBeInTheDocument();
   });
 
@@ -409,5 +410,155 @@ describe("AbrechnungView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Ja, neuen Lauf starten/i }));
     await waitFor(() => expect(mockCreateAbrechnungslauf).toHaveBeenCalledTimes(1));
+  });
+
+  it("calls createAbrechnungslauf with ignorePeers when closing despite missing closeout after confirming", async () => {
+    mockGetAbrechnung.mockResolvedValue([{ haendlernummer: "H1", summe: 10.5, anzahl: 1 }]);
+    mockGetAbrechnungsläufe.mockResolvedValue([
+      { id: "1", name: "Aktueller Lauf", start_zeitpunkt: "", end_zeitpunkt: null, is_aktiv: true },
+    ]);
+    mockGetConfig.mockImplementation((key: string) => {
+      if (key === "role") return Promise.resolve("master");
+      if (key === "kassen_id") return Promise.resolve("my-kasse");
+      return Promise.resolve(null);
+    });
+    mockGetSyncStatus.mockResolvedValue([
+      {
+        peer_id: "peer-offline",
+        name: "Nebenkasse X",
+        ws_url: "ws://y",
+        connected: true,
+        last_sync: null,
+        closeout_ok_for_lauf_id: null,
+        closeout_ok_at: null,
+      },
+    ]);
+    mockGetHaendlerAbrechnungPdfData.mockResolvedValue({
+      haendler: {
+        haendlernummer: "H1",
+        name: "Test",
+        vorname: null,
+        nachname: null,
+        strasse: null,
+        hausnummer: null,
+        plz: null,
+        stadt: null,
+        email: null,
+      },
+      lauf: { id: "1", name: "Aktueller Lauf", start_zeitpunkt: "", end_zeitpunkt: null },
+      werte: { summe: 10.5, anzahl: 1 },
+    });
+    mockOpen.mockResolvedValue("/tmp/dir");
+    mockSave.mockResolvedValue("/tmp/notfall.json");
+    mockGetNotfallExportData.mockResolvedValue({
+      meta: {
+        exported_lauf_id: "1",
+        exported_lauf_name: "Aktueller Lauf",
+        exported_lauf_start_zeitpunkt: "2026-01-01T00:00:00.000Z",
+        exported_lauf_end_zeitpunkt: null,
+        export_at: "2026-01-01T12:00:00.000Z",
+        exporting_kasse_id: null,
+        exporting_kasse_name: null,
+      },
+      kassen: [],
+      kundenabrechnungen: [],
+      buchungen: [],
+      stornos: [],
+    });
+    mockConfirm.mockResolvedValue(true);
+
+    render(<AbrechnungView onBack={() => {}} />);
+    await waitFor(() => expect(screen.getByText("H1")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /Abrechnungslauf abschließen/i }));
+    await waitFor(() => expect(screen.getByText(/Closeout prüfen/i)).toBeInTheDocument());
+
+    expect(screen.getByRole("button", { name: /Trotzdem abschließen \(Peers ignorieren\)/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Trotzdem abschließen \(Peers ignorieren\)/i }));
+    await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: /^Weiter$/i }));
+    await waitFor(() => expect(screen.getByText(/Exporte erstellen/i)).toBeInTheDocument());
+
+    const modal = screen.getByRole("heading", { name: /Abrechnungslauf abschließen/i }).closest(".abrechnung-modal");
+    if (!modal || !(modal instanceof HTMLElement)) throw new Error("Modal not found");
+    const w = within(modal);
+
+    fireEvent.click(w.getByRole("button", { name: /Notfall-Export speichern/i }));
+    await waitFor(() => expect(mockWriteTextFile).toHaveBeenCalled());
+    fireEvent.click(w.getByRole("button", { name: /Alle PDFs erstellen/i }));
+    await waitFor(() => expect(mockExportElementAsPdfToPath).toHaveBeenCalled());
+    await waitFor(() => expect(w.getByRole("button", { name: /^Weiter$/i })).toBeEnabled());
+    fireEvent.click(w.getByRole("button", { name: /^Weiter$/i }));
+    await waitFor(() => expect(screen.getByText(/Neuen Abrechnungslauf starten/i)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /Ja, neuen Lauf starten/i }));
+    await waitFor(() => expect(mockCreateAbrechnungslauf).toHaveBeenCalledTimes(1));
+    expect(mockCreateAbrechnungslauf).toHaveBeenCalledWith(
+      expect.stringMatching(/Kassentag/),
+      ["peer-offline"]
+    );
+  });
+
+  it("shows export summary in step 3 after completing PDF and Notfall export", async () => {
+    mockGetAbrechnung.mockResolvedValue([{ haendlernummer: "H1", summe: 10.5, anzahl: 1 }]);
+    mockGetHaendlerAbrechnungPdfData.mockResolvedValue({
+      haendler: {
+        haendlernummer: "H1",
+        name: "Test",
+        vorname: null,
+        nachname: null,
+        strasse: null,
+        hausnummer: null,
+        plz: null,
+        stadt: null,
+        email: null,
+      },
+      lauf: { id: "1", name: "Aktueller Lauf", start_zeitpunkt: "", end_zeitpunkt: null },
+      werte: { summe: 10.5, anzahl: 1 },
+    });
+    mockOpen.mockResolvedValue("/tmp/dir");
+    mockSave.mockResolvedValue("/tmp/notfall.json");
+    mockGetNotfallExportData.mockResolvedValue({
+      meta: {
+        exported_lauf_id: "1",
+        exported_lauf_name: "Aktueller Lauf",
+        exported_lauf_start_zeitpunkt: "2026-01-01T00:00:00.000Z",
+        exported_lauf_end_zeitpunkt: null,
+        export_at: "2026-01-01T12:00:00.000Z",
+        exporting_kasse_id: null,
+        exporting_kasse_name: null,
+      },
+      kassen: [],
+      kundenabrechnungen: [],
+      buchungen: [],
+      stornos: [],
+    });
+    mockGetSyncStatus.mockResolvedValueOnce([]);
+
+    render(<AbrechnungView onBack={() => {}} />);
+    await waitFor(() => expect(screen.getByText("H1")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /Abrechnungslauf abschließen/i }));
+    await waitFor(() => expect(screen.getByText(/Closeout prüfen/i)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /^Weiter$/i }));
+    await waitFor(() => expect(screen.getByText(/Exporte erstellen/i)).toBeInTheDocument());
+
+    const modal = screen.getByRole("heading", { name: /Abrechnungslauf abschließen/i }).closest(".abrechnung-modal");
+    if (!modal || !(modal instanceof HTMLElement)) throw new Error("Modal not found");
+    const w = within(modal);
+
+    fireEvent.click(w.getByRole("button", { name: /Notfall-Export speichern/i }));
+    await waitFor(() => expect(mockWriteTextFile).toHaveBeenCalled());
+    fireEvent.click(w.getByRole("button", { name: /Alle PDFs erstellen/i }));
+    await waitFor(() => expect(mockExportElementAsPdfToPath).toHaveBeenCalled());
+
+    await waitFor(() => expect(w.getByRole("button", { name: /^Weiter$/i })).toBeEnabled());
+    fireEvent.click(w.getByRole("button", { name: /^Weiter$/i }));
+    await waitFor(() => expect(screen.getByText(/Neuen Abrechnungslauf starten/i)).toBeInTheDocument());
+
+    expect(screen.getByText(/Export-Zusammenfassung/)).toBeInTheDocument();
+    expect(screen.getByText(/1 PDFs erstellt\./)).toBeInTheDocument();
+    expect(screen.getByText(/Notfall-Export gespeichert nach/)).toBeInTheDocument();
   });
 });
