@@ -117,7 +117,7 @@ export default function EinstellungenView({ onBack }: Props) {
     if (!kasse) return;
     setPerson1(kasse.person1_name || "");
     setPerson2(kasse.person2_name || "");
-  }, [kasse?.id]);
+  }, [kasse]);
 
   useEffect(() => {
     getConfig("ws_server_port").then((v) => v && setWsServerPort(v));
@@ -364,7 +364,7 @@ export default function EinstellungenView({ onBack }: Props) {
       try {
         const syncMsg = await startSyncConnections();
         setJoinMessage((prev) => (prev?.ok ? { ok: true, text: `${prev.text} ${syncMsg}` } : prev));
-      } catch (_) {
+      } catch {
         // Sync starten optional nach Join
       }
     } catch (e) {
@@ -678,7 +678,7 @@ export default function EinstellungenView({ onBack }: Props) {
             {joinMessage && <p className={joinMessage.ok ? "einstellungen-ok" : "einstellungen-error"}>{joinMessage.text}</p>}
 
             <h3>Sync</h3>
-            <p className="einstellungen-hinweis">Sync-Verbindungen erneut starten (z. B. nach Verbindungsabbruch).</p>
+            <p className="einstellungen-hinweis">Sync-Verbindungen erneut starten (z. B. nach Verbindungsabbruch).</p>
             <div className="einstellungen-actions">
               <button
                 type="button"

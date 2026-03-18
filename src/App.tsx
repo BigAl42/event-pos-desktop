@@ -65,7 +65,7 @@ function App() {
               await startMasterServer(port);
             }
           }
-        } catch (_) {
+        } catch {
           // Autostart ist best-effort; manuell in Einstellungen möglich.
         }
       }
@@ -76,7 +76,7 @@ function App() {
         if (myWsUrl && myWsUrl.trim()) {
           await startSyncConnections();
         }
-      } catch (_) {
+      } catch {
         // Sync-URL oder Peers ggf. noch nicht konfiguriert; ignorieren
       }
     })();

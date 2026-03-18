@@ -73,7 +73,7 @@ export default function ErststartDialog({ onDone }: Props) {
         <p>Kassenname und die beiden Personen am Platz angeben.</p>
         <div className="erststart-form">
           <label>
-            Kassenname (z. B. Stand 1)
+            Kassenname (z. B. Stand 1)
             <input
               type="text"
               value={name}

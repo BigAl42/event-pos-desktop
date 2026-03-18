@@ -1,8 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { SyncStatusEntry } from "../db";
 import SyncStatusView from "./SyncStatusView";
 
-let mockEntries: any[] = [];
+let mockEntries: SyncStatusEntry[] = [];
 
 vi.mock("../db", () => ({
   discoverMasters: vi.fn().mockResolvedValue([]),

@@ -330,7 +330,7 @@ describe("AbrechnungView", () => {
     await waitFor(() => expect(screen.getByText(/Exporte erstellen/i)).toBeInTheDocument());
 
     const modal = screen.getByRole("heading", { name: /Abrechnungslauf abschließen/i }).closest(".abrechnung-modal");
-    if (!modal) throw new Error("Modal not found");
+    if (!modal || !(modal instanceof HTMLElement)) throw new Error("Modal not found");
     const w = within(modal);
 
     const step3Btn = screen.getByRole("button", { name: /3\)\s*Neuer Lauf/i });
@@ -394,7 +394,7 @@ describe("AbrechnungView", () => {
     await waitFor(() => expect(screen.getByText(/Exporte erstellen/i)).toBeInTheDocument());
 
     const modal = screen.getByRole("heading", { name: /Abrechnungslauf abschließen/i }).closest(".abrechnung-modal");
-    if (!modal) throw new Error("Modal not found");
+    if (!modal || !(modal instanceof HTMLElement)) throw new Error("Modal not found");
     const w = within(modal);
 
     fireEvent.click(w.getByRole("button", { name: /Notfall-Export speichern/i }));

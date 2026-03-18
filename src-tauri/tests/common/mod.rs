@@ -46,6 +46,7 @@ pub fn insert_test_kasse_and_lauf(handle: &tauri::AppHandle) -> (String, String)
 }
 
 /// Fügt eine Kundenabrechnung mit einer Buchung ein (für Abrechnungslauf-Tests).
+#[allow(dead_code)] // used in commands_db, sync_db; tests ignored on macOS, run in CI
 pub fn insert_test_kundenabrechnung(
     handle: &tauri::AppHandle,
     kassen_id: &str,

@@ -114,7 +114,7 @@ export default function KasseView({ onBack }: Props) {
   useEffect(() => {
     if (!kasse || positionen.length === 0) return;
     positionRefs.current[0]?.haendlernummer?.focus();
-  }, [kasse]);
+  }, [kasse, positionen.length]);
 
   // Focus new row after addPosition (Enter or Ctrl+N)
   useEffect(() => {
@@ -267,7 +267,7 @@ export default function KasseView({ onBack }: Props) {
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [editPersonen, validPositionen.length, saving, handleAbschliessen]);
+  }, [editPersonen, validPositionen.length, saving, handleAbschliessen, onBack]);
 
   if (!kasse) {
     return (

@@ -55,7 +55,9 @@ Die Umgebungsvariable `KASSEN_INSTANCE` (master/slave) sorgt für getrennte SQLi
 
 In **Abrechnung** gibt es den Button „Abrechnungslauf abschließen“ (Wizard):
 
-1) Closeout aller relevanten Slaves prüfen (Gate)\n+2) Exporte speichern (PDF-Batch + Notfall-Export)\n+3) Neuen Lauf starten (löscht Bewegungsdaten des alten Laufs)
+1) Closeout aller relevanten Slaves prüfen (Gate)  
+2) Exporte speichern (PDF-Batch + Notfall-Export)  
+3) Neuen Lauf starten (löscht Bewegungsdaten des alten Laufs)
 
 ## Build
 
@@ -71,6 +73,8 @@ Vor jedem Commit müssen alle Tests grün sein:
 ```bash
 npm run test:all
 ```
+
+In der CI laufen zusätzlich Lint (`npm run lint`) und optional der Tauri-Build.
 
 ## Hinweise
 
