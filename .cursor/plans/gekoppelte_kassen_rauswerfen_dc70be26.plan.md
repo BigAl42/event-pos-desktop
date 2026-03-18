@@ -1,7 +1,10 @@
 ---
 name: Gekoppelte Kassen rauswerfen
 overview: "Der Master kann bereits gekoppelte Kassen (Slaves) aus dem Netzwerk entfernen: Backend-Command entfernt die Kasse aus der DB und schließt die Sync-Verbindung; die UI bietet in der Startseiten-Kassenliste und in der Sync-Status-Ansicht einen „Rauswerfen“-Button (nur Master)."
-todos: []
+todos:
+  - id: rauswerfen-umgesetzt
+    content: "Command remove_peer_from_network, removePeerFromNetwork in db.ts; Entkoppeln-Button in Startseite und SyncStatusView (mit Bestätigung)"
+    status: completed
 isProject: false
 ---
 
@@ -83,4 +86,8 @@ Optional: Nach dem Entfernen ein Event emittieren (z. B. `sync-data-changed`),
 
 - **Backend:** Kasse aus `kassen` und `sync_state` löschen, Verbindung in `SyncConnectionsState` entfernen (Sender droppen).
 - **Frontend:** Nur im Master in Sync-Status und auf der Startseite bei „Angemeldete Kassen“ einen „Rauswerfen“-Button pro Peer; Aufruf von `removePeerFromNetwork(peer_id)` und danach Liste aktualisieren.
+
+### Umsetzung (abgeschlossen)
+
+Backend: `SyncConnectionsState::remove_peer`, Command `remove_peer_from_network` in [commands.rs](src-tauri/src/commands.rs). Frontend: [db.ts](src/db.ts) `removePeerFromNetwork`. UI: In [Startseite](src/components/Startseite.tsx) und [SyncStatusView](src/components/SyncStatusView.tsx) je ein „Entkoppeln“-Button (Label „Entkoppeln“ statt „Rauswerfen“) mit Bestätigungsdialog; nur bei Bestätigung wird `removePeerFromNetwork` aufgerufen.
 

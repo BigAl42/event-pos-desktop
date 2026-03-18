@@ -17,4 +17,11 @@ isProject: false
   - `[src/db.ts](src/db.ts)` – Wrapper für `removePeerFromNetwork`.
 - **Bedeutung**: Sicherstellen, dass es keine anderen versteckten Aufrufer von `removePeerFromNetwork` gibt.
 
-### 2. Aktuelle Cancel-/Confirm
+### 2. Code-Prüfung (abgeschlossen)
+
+**Aufrufer von `removePeerFromNetwork`:**
+- **Startseite** ([Startseite.tsx](src/components/Startseite.tsx)): Klick „Entkoppeln“ öffnet Overlay; nur Klick auf „Verbindung trennen“ ruft `handleRemovePeerFromNetwork` → `removePeerFromNetwork` auf. „Abbrechen“ setzt nur `setConfirmPeerId(null)`, kein Backend-Aufruf.
+- **SyncStatusView** ([SyncStatusView.tsx](src/components/SyncStatusView.tsx)): `handleEntkoppeln` nutzt `await confirm(…)` (Tauri-Dialog); bei `!confirmed` sofort `return`, danach erst `removePeerFromNetwork`.
+- **EinstellungenView**: Nutzt `confirm` für „Abmelden & entkoppeln“ und ruft `leaveNetwork` (Nebenkasse), nicht `removePeerFromNetwork` (Master).
+
+**Manuelle Prüfung bestätigt:** In beiden Ansichten (Startseite + Sync-Status) wird nur entkoppelt, wenn explizit bestätigt wurde. Cancel/Abbrechen führt nicht zum Entfernen der Kasse.

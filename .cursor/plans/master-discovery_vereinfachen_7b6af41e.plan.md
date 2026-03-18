@@ -1,7 +1,10 @@
 ---
 name: Master-Discovery vereinfachen
 overview: Slave-Kassen sollen die Master-Kasse im LAN automatisch per mDNS finden können; die gefundenen Master werden in der UI angeboten, sodass Nutzer die URL nicht mehr manuell eintragen müssen.
-todos: []
+todos:
+  - id: discovery-umgesetzt
+    content: "discovery.rs, discover_masters Command; Master-Registrierung beim WS-Server; Einstellungen + Startseite „Hauptkasse im Netzwerk suchen“ / Discovery-Liste"
+    status: completed
 isProject: false
 ---
 
@@ -84,3 +87,7 @@ sequenceDiagram
 4. **Optional:** Erststart-Dialog um Hinweis auf „Master suchen“ in den Einstellungen ergänzen.
 
 Damit wird die Anmeldung vereinfacht: Slaves finden die Master-Kasse im Netzwerk und können sie auswählen; nur noch Join-Token und eigene Sync-URL sind nötig, die manuelle Master-URL bleibt Fallback.
+
+### Umsetzung (abgeschlossen)
+
+[discovery.rs](src-tauri/src/discovery.rs) mit mDNS Browse/Register, Command `discover_masters` in [lib.rs](src-tauri/src/lib.rs). Master registriert Service beim Start des WebSocket-Servers ([commands.rs](src-tauri/src/commands.rs)). [db.ts](src/db.ts) `discoverMasters()`. [EinstellungenView](src/components/EinstellungenView.tsx): Button „Hauptkasse im Netzwerk suchen“, Liste gefundener Master, Übernahme in master_ws_url. [Startseite](src/components/Startseite.tsx) bei Slave: automatische Discovery, Bereich „Mit Hauptkasse verbinden“ mit Liste und „Beitreten“. [SyncStatusView](src/components/SyncStatusView.tsx): Discovery-Sektion „Suchen“.

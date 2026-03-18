@@ -1,7 +1,10 @@
 ---
 name: Join-Anfragen direkt sichtbar
 overview: Im Master wird der ausstehende Join-Anfragen-Status dauerhaft in der Statuszeile angezeigt und bei neuer Anfrage per Event sofort aktualisiert; optional zeigt das Startseiten-Tile einen Badge. Navigation zu „Join-Anfragen“ erfolgt per Klick aus der Statuszeile, ohne manuelles Menü.
-todos: []
+todos:
+  - id: join-anfragen-umgesetzt
+    content: Backend emit join-request-pending; Statuszeile Pending-Count + Klick onOpenJoinAnfragen; App übergibt Callback
+    status: completed
 isProject: false
 ---
 
@@ -94,3 +97,9 @@ Styling: Deutlich sichtbar (z. B. eigene Klasse wie `statuszeile-pending-join`
 - **Optional:** Startseiten-Tile „Join-Anfragen“ mit Badge, wenn Anfragen ausstehen.
 
 Damit ist im Master auf jedem Bildschirm (Kasse, Abrechnung, Start, …) sofort sichtbar, ob Anfragen ausstehen, und ein Klick führt direkt zur Bearbeitung – ohne manuellen Wechsel ins Menü.
+
+### Umsetzung (abgeschlossen)
+
+- Backend: [server.rs](src-tauri/src/sync/server.rs) emittiert nach INSERT in `join_requests` das Event `join-request-pending`.
+- Statuszeile: Pending-Count (Polling + Listener), klickbarer Button „X Join-Anfrage(n) ausstehend“, ruft `onOpenJoinAnfragen` auf.
+- App: [App.tsx](src/App.tsx) übergibt `onOpenJoinAnfragen={() => setView("join_anfragen")}` an Statuszeile.

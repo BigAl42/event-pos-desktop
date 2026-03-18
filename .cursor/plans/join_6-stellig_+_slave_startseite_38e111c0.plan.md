@@ -1,7 +1,10 @@
 ---
 name: Join 6-stellig + Slave Startseite
 overview: Join-Token auf einen 6-stelligen Zifferncode (Anzeige 3-3) umstellen und für Slave-Kassen auf der Startseite automatisch Master-Discovery anzeigen sowie Join ohne Einstellungsmenü ermöglichen.
-todos: []
+todos:
+  - id: join-6stellig-umgesetzt
+    content: "Teil 1: 6-stelliger Token (Backend gen_range/format), Einstellungen 3-3 Anzeige/Eingabe. Teil 2: Startseite Discovery, Mit Hauptkasse verbinden, Join-Dialog"
+    status: completed
 isProject: false
 ---
 
@@ -106,4 +109,9 @@ sequenceDiagram
 
 1. Teil 1 vollständig umsetzen (6-stelliger Token Backend + Frontend Einstellungen).
 2. Danach Teil 2: Discovery auf der Startseite bei Slave, Bereich „Mit Master verbinden“, Join-Dialog mit 6-stelligem Code und eigener Sync-URL.
+
+### Umsetzung (abgeschlossen)
+
+- **Teil 1:** [commands.rs](src-tauri/src/commands.rs) erzeugt 6-stelligen Code (`gen_range(100_000..1_000_000)`, `format!("{:06}", code)`). [EinstellungenView](src/components/EinstellungenView.tsx): Anzeige `joinToken.slice(0,3)+" "+slice(3)`, Validierung „Bitte 6-stelligen Code eingeben“. Token-Prüfung im Server nutzt normalisierten Token.
+- **Teil 2:** [Startseite.tsx](src/components/Startseite.tsx): Bei Slave Discovery beim Mount (wenn nicht verbunden), Bereich „Mit Hauptkasse verbinden“ mit Liste gefundener Master, Button „Beitreten“ öffnet Join-Dialog (`setJoinDialogMaster`), Dialog mit 6-stelligem Code und Sync-URL.
 

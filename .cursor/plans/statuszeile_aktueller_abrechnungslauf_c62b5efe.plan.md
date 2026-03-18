@@ -1,7 +1,10 @@
 ---
 name: statuszeile_aktueller_abrechnungslauf
 overview: Zeigt in der Statusleiste (Statuszeile) den für diese Kasse aktuell aktiven Abrechnungslauf mit Namen an.
-todos: []
+todos:
+  - id: statuslauf-umgesetzt
+    content: Statuszeile zeigt aktiven Abrechnungslauf; getAbrechnungsläufe + syncDataVersion; Footer-Segment "Aktueller Abrechnungslauf: {name}"
+    status: completed
 isProject: false
 ---
 
@@ -49,9 +52,7 @@ isProject: false
   - Scheitert `getAbrechnungsläufe`, wird **kein eigener Fehler in der Statuszeile angezeigt**, sondern `aktuellerLaufName` bleibt `null`.
   - So bleibt die bestehende Sync-Statusanzeige unverändert und die Lauf-Info ist ein zusätzlicher, unkritischer Komfort.
 
-### Todos
+### Umsetzung (abgeschlossen)
 
-- **statuslauf-import**: `Statuszeile.tsx` so erweitern, dass `getAbrechnungsläufe` und Typ `Abrechnungslauf` importiert und genutzt werden.
-- **statuslauf-state-und-effekt**: State und `useEffect` in `Statuszeile.tsx` anlegen, die den aktiven Abrechnungslauf laden und bei `syncDataVersion`-Änderungen aktualisieren.
-- **statuslauf-anzeige**: Im Footer von `Statuszeile.tsx` ein neues Textsegment einbauen: „Aktueller Abrechnungslauf: {name}“ (nur wenn vorhanden).
+In [Statuszeile.tsx](src/components/Statuszeile.tsx) umgesetzt: Import von `getAbrechnungsläufe` und `Abrechnungslauf`, State `aktuellerLaufName`, `useEffect` bei `role`/`syncDataVersion` lädt aktiven Lauf, Footer-Segment „Aktueller Abrechnungslauf: **{name}**“ (nur wenn vorhanden).
 

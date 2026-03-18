@@ -1,7 +1,10 @@
 ---
 name: Slave-Verbindungsstatus transparent
 overview: Die Slave-Startseite zeigt gleichzeitig "Keine Master gefunden" (aus mDNS) und "Bereits verbunden mit Master" (aus Sync-Status), was verwirrt. Die Anzeige wird so umgebaut, dass der tatsächliche Verbindungsstatus eine einzige, klare Aussage liefert und die Discovery-Anzeige nur bei Bedarf erscheint.
-todos: []
+todos:
+  - id: slave-status-umgesetzt
+    content: Slave-Bereich "Mit Hauptkasse verbinden" verzweigt nach slaveConnected; bei verbunden nur eine Meldung + Link Einstellungen
+    status: completed
 isProject: false
 ---
 
@@ -107,4 +110,8 @@ flowchart TD
 
 - **Master-Seite:** Header + „Angemeldete Kassen“ mit Verbunden/Getrennt-Badges bleiben wie sie sind.
 - **SyncStatusView** und **Einstellungen** (Discovery-Button „Master im Netzwerk suchen“) bleiben unverändert; nur die Startseiten-Darstellung wird vereinheitlicht.
+
+## Umsetzung (abgeschlossen)
+
+In [Startseite.tsx](src/components/Startseite.tsx): Im Slave-Bereich „Mit Hauptkasse verbinden“ wird bei `slaveConnected` nur „Mit Hauptkasse verbunden.“ + Link „In Einstellungen Hauptkasse erneut suchen“ angezeigt; bei nicht verbunden die Discovery-Anzeige (Suche/Liste/Keine gefunden) ohne zusätzlichen „Bereits verbunden“-Text.
 

@@ -1,7 +1,13 @@
 ---
 name: Sync-Status und Reset Abrechnungslauf
 overview: "Zwei Themen: (1) Sync-Anzeige korrigieren, sodass beide Seiten (Master und Slave) den Verbindungsstatus korrekt anzeigen, indem der Server beim Akzeptieren einer Sync-Verbindung den Status setzt. (2) Einen Reset für einen neuen Abrechnungslauf implementieren: alle Buchungen/Kundenabrechnungen/Stornos und Sync-Stände löschen, Belegzähler zurücksetzen, Händlerliste und Kassen/Config unverändert lassen."
-todos: []
+todos:
+  - id: sync-status-server
+    content: handle_sync_connection setzt set_connected(peer_id, true/false) beim Öffnen/Schließen
+    status: completed
+  - id: reset-abrechnungslauf
+    content: Command reset_abrechnungslauf; Einstellungen „Neuen Abrechnungslauf starten“ mit Bestätigung (createAbrechnungslauf)
+    status: completed
 isProject: false
 ---
 
@@ -95,4 +101,9 @@ Reihenfolge der DELETEs wegen FK: zuerst `stornos`, dann `buchungen`, dann `kund
 - [src-tauri/src/commands.rs](src-tauri/src/commands.rs) – neuer Command `reset_abrechnungslauf`; in `lib.rs` registrieren.
 - [src/db.ts](src/db.ts) – neue Funktion `resetAbrechnungslauf()` (invoke des Commands).
 - [src/components/EinstellungenView.tsx](src/components/EinstellungenView.tsx) – neuer Abschnitt „Neuer Abrechnungslauf“ mit Bestätigung und Button.
+
+### Umsetzung (abgeschlossen)
+
+- **Sync-Status:** In [server.rs](src-tauri/src/sync/server.rs) `handle_sync_connection`: beim Öffnen `sync_status.set_connected(&peer_id, true)`, beim Schließen (vor remove) `set_connected(&peer_id, false)`.
+- **Reset:** Command `reset_abrechnungslauf` in [commands.rs](src-tauri/src/commands.rs), [db.ts](src/db.ts) `resetAbrechnungslauf()`. Einstellungen: Abschnitt „Neuen Abrechnungslauf starten“ mit Bestätigungsdialog, ruft `createAbrechnungslauf` auf (Erfolgsmeldung „Neuer Abrechnungslauf gestartet.“).
 

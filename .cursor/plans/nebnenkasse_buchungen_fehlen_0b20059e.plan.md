@@ -1,7 +1,10 @@
 ---
 name: nebnenkasse_buchungen_fehlen
 overview: Buchungen der Nebenkasse werden ohne Fehlermeldung erfasst, tauchen aber weder in der Abrechnungsübersicht noch in der Storno-Ansicht auf. Der Plan fokussiert auf die Zuordnung neuer Kundenabrechnungen zu einem Abrechnungslauf und auf mögliche Sync-Probleme zwischen Slave und Master.
-todos: []
+todos:
+  - id: abrechnungslauf-zuordnung
+    content: createKundenabrechnung setzt abrechnungslauf_id via getAktivenAbrechnungslaufId (db.ts)
+    status: completed
 isProject: false
 ---
 
@@ -68,8 +71,12 @@ flowchart LR
     syncBatch --> applyBatch[apply_batch]
     applyBatch --> masterDb["SQLite (Master): kundenabrechnung + buchungen"]
     masterDb --> masterAbrechnung[AbrechnungView Master]
-    masterDb --> masterStorno[StornoView Master
+    masterDb --> masterStorno[StornoView Master]
 ```
+
+### Umsetzung (Kern umgesetzt)
+
+In [db.ts](src/db.ts) `createKundenabrechnung`: vor dem INSERT wird `abrechnungslaufId = await getAktivenAbrechnungslaufId()` geladen und in `kundenabrechnung.abrechnungslauf_id` geschrieben. Damit erscheinen neue Buchungen (Master und Slave) im aktiven Lauf in Abrechnung und Storno. Sync und optionale UI-Hinweise bei Lauf-Mismatch können bei Bedarf separat ergänzt werden.
 
 
 

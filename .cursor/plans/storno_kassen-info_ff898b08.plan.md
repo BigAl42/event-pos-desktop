@@ -1,7 +1,10 @@
 ---
 name: Storno Kassen-Info
 overview: In der Storno-Ansicht wird die Kasse angezeigt, die die jeweilige Abrechnung (und damit alle zugehörigen Buchungen) erfasst hat. Dafür wird das Backend um den Kassennamen erweitert und die StornoView zeigt die Information in der Liste und im Detail an.
-todos: []
+todos:
+  - id: storno-kasse-umgesetzt
+    content: KundenabrechnungListItem + kassen_name (JOIN kassen); StornoView Liste und Detail "Erfasst von"
+    status: completed
 isProject: false
 ---
 
@@ -71,3 +74,7 @@ flowchart LR
 
 
 Keine Migration nötig (nur SELECT-Erweiterung mit JOIN auf bestehende Tabelle `kassen`).
+
+### Umsetzung (abgeschlossen)
+
+Backend: `KundenabrechnungListItem` mit `kassen_name`, JOIN auf `kassen` in `get_recent_abrechnungen`. Frontend: [db.ts](src/db.ts) Typ mit `kassen_name`. [StornoView.tsx](src/components/StornoView.tsx): Liste „Kasse: {a.kassen_name ?? a.kassen_id}“, Detail „Erfasst von: …“ (Klasse `.storno-kasse-info`).
