@@ -12,6 +12,7 @@ Wenn sich Anforderungen, UX-Flows oder Architektur ändern, muss `APP_OVERVIEW.m
   - Neue Commands/Backend-APIs, neue/angepasste Aggregationen.
   - Änderungen an Datenmodell/Migrationen/SQLite-Speicherort.
   - Neue Test-/Build-Skripte oder Commit-Qualitätsregeln.
+  - Neue Hilfe-/Handbuch-Kapitel oder -Einstiege (Inhalte unter `docs/handbuch/`; siehe auch Regel „Vite-Build, Bundle-Größe & Handbuch“).
 
 - **Wie aktualisieren (Qualitätskriterien)?**
   - **Kurz**: bevorzugt Bulletpoints; keine langen Erklärtexte.

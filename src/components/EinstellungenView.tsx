@@ -28,7 +28,7 @@ import type { Kasse, DiscoveredMaster, Abrechnungslauf, NotfallExportDto } from 
 import { buildNotfallCsv, buildNotfallExcel, parseNotfallCsv, parseNotfallExcel } from "../utils/notfallImportExport";
 import "./EinstellungenView.css";
 
-type Props = { onBack: () => void };
+type Props = { onBack: () => void; onOpenHandbuch?: () => void };
 
 const DEFAULT_WS_PORT = 8765;
 
@@ -56,7 +56,7 @@ function AccordionSection({
   );
 }
 
-export default function EinstellungenView({ onBack }: Props) {
+export default function EinstellungenView({ onBack, onOpenHandbuch }: Props) {
   const [kasse, setKasse] = useState<Kasse | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [editPersonen, setEditPersonen] = useState(false);
@@ -390,6 +390,11 @@ export default function EinstellungenView({ onBack }: Props) {
           <h1>Einstellungen</h1>
           {role && <p className="einstellungen-header-subtitle">{role === "master" ? "Hauptkasse" : "Nebenkasse"}</p>}
         </div>
+        {onOpenHandbuch && (
+          <button type="button" className="einstellungen-handbuch-link" onClick={onOpenHandbuch}>
+            Handbuch
+          </button>
+        )}
       </header>
 
       {kasse && (

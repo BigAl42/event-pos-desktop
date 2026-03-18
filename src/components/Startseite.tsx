@@ -44,6 +44,7 @@ type Props = {
   onOpenStorno?: () => void;
   onOpenSyncStatus?: () => void;
   onOpenEinstellungen: () => void;
+  onOpenHandbuch?: () => void;
   onOpenHaendler?: () => void;
   onOpenHaendlerMaster?: () => void;
   onOpenHaendlerSlave?: () => void;
@@ -56,6 +57,7 @@ export default function Startseite({
   onOpenStorno,
   onOpenSyncStatus,
   onOpenEinstellungen,
+  onOpenHandbuch,
   onOpenHaendler,
   onOpenHaendlerMaster,
   onOpenHaendlerSlave,
@@ -416,6 +418,12 @@ export default function Startseite({
               )}
             </span>
             <span className="tile-desc">Anmeldungen annehmen/ablehnen</span>
+          </button>
+        )}
+        {onOpenHandbuch && (
+          <button type="button" className="tile tile-handbuch" onClick={onOpenHandbuch}>
+            <span className="tile-title">Handbuch</span>
+            <span className="tile-desc">Hilfe &amp; Anleitung</span>
           </button>
         )}
         <button type="button" className="tile tile-einstellungen" onClick={onOpenEinstellungen}>

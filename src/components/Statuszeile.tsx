@@ -7,9 +7,10 @@ import "./Statuszeile.css";
 
 type Props = {
   onOpenJoinAnfragen?: () => void;
+  onOpenHandbuch?: () => void;
 };
 
-export default function Statuszeile({ onOpenJoinAnfragen }: Props) {
+export default function Statuszeile({ onOpenJoinAnfragen, onOpenHandbuch }: Props) {
   const { role, isConnected, statusText } = useSyncStatus();
   const [pendingJoinCount, setPendingJoinCount] = useState(0);
   const { syncDataVersion } = useSyncData();
@@ -81,6 +82,14 @@ export default function Statuszeile({ onOpenJoinAnfragen }: Props) {
             aria-label={`${pendingJoinCount} Join-Anfrage(n) ausstehend – öffnen`}
           >
             {pendingJoinCount} Join-Anfrage{pendingJoinCount !== 1 ? "n" : ""} ausstehend
+          </button>
+        </>
+      )}
+      {onOpenHandbuch && (
+        <>
+          <span className="statuszeile-sep"> · </span>
+          <button type="button" className="statuszeile-hilfe" onClick={onOpenHandbuch}>
+            Hilfe
           </button>
         </>
       )}

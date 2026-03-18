@@ -12,6 +12,7 @@ Offline-fähiges Kassensystem mit mehreren Kassenplätzen (Master/Slave), Händl
 
 - **Kasse**: Kundenabrechnung mit 1–n Positionen, automatische Belegnummern (`Prefix-Jahr-NNN`), Besetzung (Person 1/2).
 - **Abrechnung**: Backend-Aggregat „Summe/Anzahl pro Händler“ + pro Händler **1-seitige A4-PDF**.
+- **Handbuch**: In-App-Handbuch aus Markdown (pro Release gebundelt) + PDF-Export (Kapitel oder gesamtes Handbuch).
 - **Abrechnungsläufe**: aktiver Lauf steuert den „Kassentag“ (Buchungen/Kundenabrechnungen hängen an `abrechnungslauf_id`).
 - **Sync (Master/Slave)**: WebSocket-Sync für Kundenabrechnungen (sequenzbasiert) + Stornos.
 - **Closeout (Slave)**: Nebenkasse kann bestätigen lassen, dass beim Master alle Daten angekommen sind.
@@ -80,3 +81,4 @@ In der CI laufen zusätzlich Lint (`npm run lint`) und optional der Tauri-Build.
 
 - DB: SQLite im App-Datenverzeichnis; Migrationen unter `src-tauri/migrations/`.
 - Sync/Backend: Rust Commands unter `src-tauri/src/commands.rs`, Sync-Protokoll unter `src-tauri/src/sync/`.
+- Handbuch: Markdown unter `docs/handbuch/` (TOC aus Frontmatter: `title`, `order`, `slug`), Anzeige in `src/components/HandbuchView.tsx`.

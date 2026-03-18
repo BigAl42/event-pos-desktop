@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { hasKasse, getConfig, startMasterServer, isMasterServerRunning, startSyncConnections } from "./db";
 import { SyncDataProvider } from "./SyncDataContext";
 import { SyncStatusProvider } from "./SyncStatusContext";
@@ -16,6 +16,8 @@ import StornoView from "./components/StornoView";
 import SyncStatusView from "./components/SyncStatusView";
 import Statuszeile from "./components/Statuszeile";
 
+const HandbuchView = lazy(() => import("./components/HandbuchView"));
+
 export type View =
   | "start"
   | "kasse"
@@ -23,6 +25,7 @@ export type View =
   | "storno"
   | "sync_status"
   | "einstellungen"
+  | "handbuch"
   | "haendler"
   | "haendler_slave"
   | "haendler_drilldown"
@@ -115,6 +118,7 @@ function App() {
       <SyncStatusProvider>
         <div className="app-layout">
           <main className="app-main">
+            <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center" }}>Lade…</div>}>
             {view === "kasse" && <KasseView onBack={() => setView("start")} />}
             {view === "abrechnung" && <AbrechnungView onBack={() => setView("start")} />}
             {view === "storno" && <StornoView onBack={() => setView("start")} />}
@@ -124,7 +128,12 @@ function App() {
                 onOpenEinstellungen={() => setView("einstellungen")}
               />
             )}
-            {view === "einstellungen" && <EinstellungenView onBack={() => setView("start")} />}
+            {view === "einstellungen" && (
+              <EinstellungenView
+                onBack={() => setView("start")}
+                onOpenHandbuch={() => setView("handbuch")}
+              />
+            )}
             {view === "haendler" && <HaendlerverwaltungView onBack={() => setView("start")} />}
             {view === "haendler_stammdaten" && (
               <HaendlerverwaltungView onBack={() => setView("haendler_master_uebersicht")} />
@@ -163,6 +172,7 @@ function App() {
               />
             )}
             {view === "join_anfragen" && <JoinAnfragenView onBack={() => setView("start")} />}
+            {view === "handbuch" && <HandbuchView onBack={() => setView("start")} />}
             {view === "start" && (
               <Startseite
                 onOpenKasse={() => setView("kasse")}
@@ -170,14 +180,19 @@ function App() {
                 onOpenStorno={() => setView("storno")}
                 onOpenSyncStatus={() => setView("sync_status")}
                 onOpenEinstellungen={() => setView("einstellungen")}
+                onOpenHandbuch={() => setView("handbuch")}
                 onOpenHaendler={() => setView("haendler")}
                 onOpenHaendlerMaster={() => setView("haendler_master_uebersicht")}
                 onOpenHaendlerSlave={() => setView("haendler_slave")}
                 onOpenJoinAnfragen={() => setView("join_anfragen")}
               />
             )}
+            </Suspense>
           </main>
-          <Statuszeile onOpenJoinAnfragen={() => setView("join_anfragen")} />
+          <Statuszeile
+            onOpenJoinAnfragen={() => setView("join_anfragen")}
+            onOpenHandbuch={() => setView("handbuch")}
+          />
         </div>
       </SyncStatusProvider>
     </SyncDataProvider>

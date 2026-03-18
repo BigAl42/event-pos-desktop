@@ -1,0 +1,20 @@
+---
+description: Vite-Build ohne Deprecations, Chunk-Größe im Griff, Handbuch/Docs als gebündelte Markdown-Assets.
+alwaysApply: true
+---
+
+# Vite-Build, Bundle-Größe & Handbuch
+
+- **Vite `import.meta.glob` für Raw-Inhalte**
+  - Nicht die veraltete Option `as: 'raw'` verwenden (Deprecation-Warnung).
+  - Stattdessen: `query: '?raw', import: 'default'` (siehe z. B. `src/handbuch/handbuchIndex.ts`).
+
+- **Chunk-Größe und Lazy Loading**
+  - Schwere Views (z. B. Handbuch mit Markdown- und PDF-Libs) per `React.lazy()` laden und in `App.tsx` mit `<Suspense>` umgeben, damit sie in eigenen Chunks landen.
+  - Schwere Bibliotheken, die nur in einer bestimmten View/Feature genutzt werden (z. B. `html2pdf.js` nur beim PDF-Export), per dynamischem Import laden: `const lib = await import('...')` – so entstehen getrennte Chunks und der Haupt-Chunk bleibt unter dem Build-Limit (keine „chunk larger than 1500 kB“-Warnung).
+
+- **Handbuch/Dokumentation (release-fix)**
+  - Inhalte, die pro Release fest zum Build gehören sollen: als **Build-Assets** bundeln (z. B. Markdown per `import.meta.glob`), nicht zur Laufzeit aus Dateisystem oder Netz nachladen.
+  - Pfad im Repo: `docs/handbuch/` (Einstieg z. B. `index.md`, Kapitel in `kapitel/*.md`). TOC wird aus **Frontmatter** gebaut: `title`, `order`, `slug`.
+  - Mehrere Einstiege zur Hilfe (Startseite-Tile, Einstellungen, Statuszeile) verbessern die Auffindbarkeit.
+  - Bei neuen Handbuch-Kapiteln oder -Einstiegen: `APP_OVERVIEW.md` und ggf. `README.md` anpassen.

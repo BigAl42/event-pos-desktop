@@ -6,8 +6,9 @@
 
 ## Kern-Workflows
 - **Erststart**: „Als Master einrichten?“ oder „Netz beitreten“; Kassenname + 2 Personen erfassen.
-- **Startseite**: Tiles für **Kasse**, **Abrechnung**, **Einstellungen**; Sync-/Verbindungsstatus in der **Statuszeile (Footer)**.
+- **Startseite**: Tiles für **Kasse**, **Abrechnung**, **Handbuch**, **Einstellungen**; Sync-/Verbindungsstatus in der **Statuszeile (Footer)**.
   - **Nebenkasse**: Join-/Verbinden-UI nur bei fehlender Verbindung/Sync-Fehler + sichtbare **Closeout/Abmelden**-Kachel (führt zu Einstellungen).
+- **Handbuch**: Markdown-Inhalte aus `docs/handbuch/` (pro Release gebundelt); TOC aus Frontmatter (`title`, `order`, `slug`). Eigene View mit TOC links, Inhalt rechts (react-markdown + remark-gfm). Einstiege: Startseite-Tile, Einstellungen-Header, Statuszeile „Hilfe“. **PDF-Export**: aktuelles Kapitel oder ganzes Handbuch via html2pdf.js + Save-Dialog + Tauri FS.
 - **Kasse**:
   - Kundenabrechnung mit 1–n Positionen: Händlernummer, Betrag, optional Bezeichnung.
   - Besetzung (Person 1/2) anzeigen/ändern.
@@ -36,7 +37,8 @@
 - **Backend**: Tauri (Rust) + SQLite.
 - **Datenbank**: SQLite im App-Datenverzeichnis; Migration: `src-tauri/migrations/001_initial.sql`.
 - **Backend-API**: Tauri-Commands (u.a. in `src-tauri/src/commands.rs`), Aufruf via `invoke` (z.B. `db.ts`).
-- **PDF-Abrechnung**: Daten aus `get_haendler_abrechnung_pdf_data`, Rendering als druckoptimiertes HTML (`src/components/HaendlerAbrechnungPdf.tsx`) und Export via `html2pdf.js`.
+- **PDF-Abrechnung**: Daten aus `get_haendler_abrechnung_pdf_data`, Rendering als druckoptimiertes HTML (`src/components/HaendlerAbrechnungPdf.tsx`), Export via `src/utils/pdfExport.ts` (html2canvas + jsPDF).
+- **Handbuch**: `src/handbuch/handbuchIndex.ts` (Vite glob `docs/handbuch/**/*.md`, Frontmatter-Parse); `HandbuchView.tsx` + `src/utils/handbuchPdfExport.ts` (html2pdf.js für Multi-Page).
 - **Sync-Protokoll**: `src-tauri/src/sync/*` (WebSocket, `Message`-enum in `src-tauri/src/sync/protocol.rs`).
 
 ## Wichtige Regeln/Leitplanken (aus Cursor-Rules)
