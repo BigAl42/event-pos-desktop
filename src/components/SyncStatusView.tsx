@@ -14,6 +14,19 @@ import "./SyncStatusView.css";
 
 type Props = { onBack: () => void; onOpenEinstellungen?: () => void };
 
+function isWssUrl(wsUrl: string): boolean {
+  return wsUrl.trim().toLowerCase().startsWith("wss:");
+}
+
+function confidentialityLabel(wsUrl: string, connected: boolean): string {
+  if (isWssUrl(wsUrl)) {
+    return connected
+      ? "Verschlüsselt (TLS/WSS), Verbindung aktiv"
+      : "Verschlüsselt vorgesehen (TLS/WSS), derzeit keine aktive Verbindung";
+  }
+  return "Nicht verschlüsselt (ws://)";
+}
+
 function formatZeit(iso: string | null): { text: string; isStale: boolean } {
   if (!iso) return { text: "Noch kein Sync erfolgt", isStale: true };
   try {
@@ -160,6 +173,14 @@ export default function SyncStatusView({ onBack, onOpenEinstellungen }: Props) {
         ) : (
           <p className="sync-status-leer">Sync-Runtime-Status nicht verfügbar.</p>
         )}
+        {runtime?.local_cert_fingerprint ? (
+          <p className="sync-status-local-fp">
+            Diese Kasse (TLS-Identität):{" "}
+            <code className="sync-status-fingerprint-code" title={runtime.local_cert_fingerprint}>
+              {runtime.local_cert_fingerprint}
+            </code>
+          </p>
+        ) : null}
       </section>
 
       <section className="sync-status-section">
@@ -169,6 +190,10 @@ export default function SyncStatusView({ onBack, onOpenEinstellungen }: Props) {
             {discoveryLoading ? "Suche…" : "Suchen"}
           </button>
         </div>
+        <p className="sync-status-mdns-hint">
+          Gefundene Adressen nutzen WSS (TLS). Den Zertifikats-Fingerprint des Peers siehst du in der Peer-Liste
+          nach erfolgreichem Beitritt.
+        </p>
         {discoveryError && <p className="sync-status-error">{discoveryError}</p>}
         {discoveredMasters.length === 0 ? (
           <p className="sync-status-leer">
@@ -256,6 +281,25 @@ export default function SyncStatusView({ onBack, onOpenEinstellungen }: Props) {
                   </button>
                 )}
                 <span className="sync-status-url">{e.ws_url}</span>
+                <span
+                  className={
+                    isWssUrl(e.ws_url) ? "sync-status-tls sync-status-tls-ok" : "sync-status-tls sync-status-tls-warn"
+                  }
+                >
+                  {confidentialityLabel(e.ws_url, e.connected)}
+                </span>
+                <div className="sync-status-pin-row">
+                  <span className="sync-status-pin-label">Zertifikats-Pin: </span>
+                  {e.pinned_fingerprint ? (
+                    <code className="sync-status-fingerprint-code" title={e.pinned_fingerprint}>
+                      {e.pinned_fingerprint}
+                    </code>
+                  ) : (
+                    <span className="sync-status-pin-missing">
+                      Noch kein Pin gespeichert (typisch nach erstem erfolgreichen Join/Freigabe).
+                    </span>
+                  )}
+                </div>
                 <span
                   className={
                     formatZeit(e.last_sync).isStale

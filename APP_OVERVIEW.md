@@ -26,7 +26,7 @@
 - **Zwei lokale Kassen**: `npm run tauri:master` und `npm run tauri:slave`.
 - **Trennung der Daten**: `KASSEN_INSTANCE=master|slave` → getrennte SQLite-DBs.
 - **Slave**: eigener Vite-Port (1421) + eigene Tauri-Config (`tauri.slave.json`) für Parallelbetrieb.
-- **Netz-Übersicht**: `Sync-Status` zeigt Sync-Peers inkl. Adresse (`ws_url`) und mDNS-Discovery gefundener Hauptkassen (Name+Adresse).
+- **Netz-Übersicht**: `Sync-Status` zeigt Sync-Peers inkl. Adresse (`ws_url`), **TLS/WSS-Vertraulichkeitszeile**, **Zertifikats-Pin** (`kassen_cert_pins`) pro Peer sowie **Fingerprint der eigenen Kasse** (Runtime); mDNS-Hinweis, dass der Peer-Fingerprint erst nach Beitritt in der Peer-Liste erscheint.
 - **Laufende Synchronisation**: WebSocket-Sync tauscht **Kundenabrechnungen (sequenzbasiert)** und **Stornos** aus; Watermarks für Stornos werden per Ack bestätigt.
 - **Abmelden (Closeout)**: Nebenkasse kann den Master bestätigen lassen, dass **alle Daten dieser Kasse angekommen sind** (Buchungen + Stornos), bevor sie sich abmeldet/entkoppelt; Master nutzt Closeout als Gate beim Abschluss.
 - **Entkoppeln**: Beim „Abmelden & entkoppeln“ informiert die Nebenkasse die Hauptkasse, damit sie aus der Peer-Liste verschwindet (ws_url wird auf der Hauptkasse entfernt).

@@ -485,6 +485,8 @@ export type SyncRuntimeStatus = {
   started: boolean;
   connected_peers: number;
   started_at: string | null;
+  /** SHA-256 (hex) der TLS-Identität dieser Kasse. */
+  local_cert_fingerprint?: string | null;
 };
 
 export async function getSyncRuntimeStatus(): Promise<SyncRuntimeStatus> {
@@ -552,6 +554,8 @@ export type SyncStatusEntry = {
   last_sync: string | null;
   closeout_ok_for_lauf_id?: string | null;
   closeout_ok_at?: string | null;
+  /** Gespeicherter TOFU-Pin für diesen Peer (nach Join/Freigabe). */
+  pinned_fingerprint?: string | null;
 };
 
 export async function getSyncStatus(): Promise<SyncStatusEntry[]> {

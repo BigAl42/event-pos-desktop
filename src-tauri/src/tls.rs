@@ -86,9 +86,11 @@ pub fn ensure_identity_and_fingerprint(app: &AppHandle) -> Result<(native_tls::I
         builder.sign(&pkey, MessageDigest::sha256()).map_err(|e| e.to_string())?;
         let x509: X509 = builder.build();
 
-        let builder = Pkcs12::builder();
-        let pkcs12 = builder
-            .build(&pw, "kassensystem", &pkey, &x509)
+        let pkcs12 = Pkcs12::builder()
+            .name("kassensystem")
+            .pkey(&pkey)
+            .cert(&x509)
+            .build2(&pw)
             .map_err(|e| e.to_string())?;
         fs::write(&path, pkcs12.to_der().map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
     }
@@ -97,8 +99,14 @@ pub fn ensure_identity_and_fingerprint(app: &AppHandle) -> Result<(native_tls::I
     let id = native_tls::Identity::from_pkcs12(&der, &pw).map_err(|e| e.to_string())?;
 
     // Compute fingerprint by parsing the PKCS12 and extracting the leaf certificate.
-    let parsed = Pkcs12::from_der(&der).map_err(|e| e.to_string())?.parse(&pw).map_err(|e| e.to_string())?;
-    let cert_der = parsed.cert.to_der().map_err(|e| e.to_string())?;
+    let parsed = Pkcs12::from_der(&der)
+        .map_err(|e| e.to_string())?
+        .parse2(&pw)
+        .map_err(|e| e.to_string())?;
+    let cert = parsed
+        .cert
+        .ok_or_else(|| "PKCS#12 enthält kein Zertifikat".to_string())?;
+    let cert_der = cert.to_der().map_err(|e| e.to_string())?;
     let fp = sha256_fingerprint_hex(&cert_der);
 
     Ok((id, fp))

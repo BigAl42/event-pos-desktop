@@ -9,7 +9,7 @@ vi.mock("../db", () => ({
   discoverMasters: vi.fn().mockResolvedValue([]),
   getAbrechnungsläufe: vi.fn(),
   getConfig: vi.fn(),
-  getSyncRuntimeStatus: vi.fn().mockResolvedValue({ started: true, connected_peers: 1, started_at: null }),
+  getSyncRuntimeStatus: vi.fn(),
   removePeerFromNetwork: vi.fn(),
 }));
 
@@ -22,14 +22,22 @@ vi.mock("../SyncStatusContext", () => ({
   }),
 }));
 
-const { getAbrechnungsläufe, getConfig } = await import("../db");
+const { getAbrechnungsläufe, getConfig, getSyncRuntimeStatus } = await import("../db");
 const mockGetAbrechnungsläufe = vi.mocked(getAbrechnungsläufe);
 const mockGetConfig = vi.mocked(getConfig);
+const mockGetSyncRuntimeStatus = vi.mocked(getSyncRuntimeStatus);
 
 describe("SyncStatusView", () => {
   beforeEach(() => {
     mockGetAbrechnungsläufe.mockReset();
     mockGetConfig.mockReset();
+    mockGetSyncRuntimeStatus.mockReset();
+    mockGetSyncRuntimeStatus.mockResolvedValue({
+      started: true,
+      connected_peers: 1,
+      started_at: null,
+      local_cert_fingerprint: null,
+    });
     mockEntries = [
       {
         peer_id: "peer1",
@@ -39,6 +47,7 @@ describe("SyncStatusView", () => {
         last_sync: null,
         closeout_ok_for_lauf_id: "lauf-old",
         closeout_ok_at: new Date("2026-01-01T10:00:00.000Z").toISOString(),
+        pinned_fingerprint: "aa11bb22cc",
       },
     ];
   });
@@ -62,6 +71,7 @@ describe("SyncStatusView", () => {
         last_sync: null,
         closeout_ok_for_lauf_id: "lauf-active",
         closeout_ok_at: new Date("2026-01-01T10:00:00.000Z").toISOString(),
+        pinned_fingerprint: null,
       },
     ];
     mockGetConfig.mockResolvedValue("master");
@@ -70,6 +80,56 @@ describe("SyncStatusView", () => {
     ]);
     render(<SyncStatusView onBack={() => {}} />);
     expect(await screen.findByText(/^Closeout OK$/i)).toBeInTheDocument();
+  });
+
+  it("shows TLS confidentiality line and pinned fingerprint for WSS peer", async () => {
+    mockGetConfig.mockResolvedValue("slave");
+    mockGetAbrechnungsläufe.mockResolvedValue([]);
+    render(<SyncStatusView onBack={() => {}} />);
+    expect(
+      await screen.findByText(/Verschlüsselt \(TLS\/WSS\), Verbindung aktiv/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText("aa11bb22cc")).toBeInTheDocument();
+  });
+
+  it("shows unencrypted label for ws:// URL", async () => {
+    mockEntries = [
+      {
+        peer_id: "p2",
+        name: "Legacy",
+        ws_url: "ws://old:8765",
+        connected: false,
+        last_sync: null,
+        pinned_fingerprint: null,
+      },
+    ];
+    mockGetConfig.mockResolvedValue("slave");
+    mockGetAbrechnungsläufe.mockResolvedValue([]);
+    render(<SyncStatusView onBack={() => {}} />);
+    expect(await screen.findByText(/Nicht verschlüsselt \(ws:\/\/\)/i)).toBeInTheDocument();
+  });
+
+  it("shows local TLS identity fingerprint from runtime when present", async () => {
+    mockGetSyncRuntimeStatus.mockResolvedValue({
+      started: false,
+      connected_peers: 0,
+      started_at: null,
+      local_cert_fingerprint: "local-fp-hex-test",
+    });
+    mockGetConfig.mockResolvedValue("slave");
+    mockGetAbrechnungsläufe.mockResolvedValue([]);
+    render(<SyncStatusView onBack={() => {}} />);
+    expect(await screen.findByText(/Diese Kasse \(TLS-Identität\)/i)).toBeInTheDocument();
+    expect(screen.getByText("local-fp-hex-test")).toBeInTheDocument();
+  });
+
+  it("shows mDNS hint about WSS and peer fingerprint", async () => {
+    mockGetConfig.mockResolvedValue("slave");
+    mockGetAbrechnungsläufe.mockResolvedValue([]);
+    render(<SyncStatusView onBack={() => {}} />);
+    expect(
+      await screen.findByText(/Gefundene Adressen nutzen WSS \(TLS\)/i)
+    ).toBeInTheDocument();
   });
 });
 

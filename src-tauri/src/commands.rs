@@ -29,6 +29,9 @@ pub struct SyncRuntimeStatus {
     pub started: bool,
     pub connected_peers: usize,
     pub started_at: Option<String>,
+    /// SHA-256-Fingerprint (hex) der TLS-Identität dieser Kasse (self-signed).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub local_cert_fingerprint: Option<String>,
 }
 
 pub struct SyncRuntimeState(pub Mutex<SyncRuntimeStatus>);
@@ -39,6 +42,7 @@ impl Default for SyncRuntimeState {
             started: false,
             connected_peers: 0,
             started_at: None,
+            local_cert_fingerprint: None,
         }))
     }
 }
@@ -1679,6 +1683,11 @@ pub async fn get_sync_runtime_status(
         .map_err(|e: std::sync::PoisonError<_>| e.to_string())?
         .clone();
     status.connected_peers = connected_peers;
+    let local_cert_fingerprint = match crate::tls::ensure_identity_and_fingerprint(&app) {
+        Ok((_identity, fp)) => Some(fp),
+        Err(_) => None,
+    };
+    status.local_cert_fingerprint = local_cert_fingerprint;
     Ok(status)
 }
 
@@ -1719,6 +1728,9 @@ pub struct SyncStatusEntry {
     pub closeout_ok_for_lauf_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub closeout_ok_at: Option<String>,
+    /// Gespeicherter TOFU-Zertifikats-Pin für diesen Peer (nach Join/Freigabe).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pinned_fingerprint: Option<String>,
 }
 
 #[command]
@@ -1733,7 +1745,10 @@ pub fn get_sync_status(
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare(
-            "SELECT id, name, ws_url FROM kassen WHERE ws_url IS NOT NULL AND ws_url != '' AND id != ?1",
+            "SELECT k.id, k.name, k.ws_url, p.pinned_fingerprint \
+             FROM kassen k \
+             LEFT JOIN kassen_cert_pins p ON p.peer_kassen_id = k.id \
+             WHERE k.ws_url IS NOT NULL AND k.ws_url != '' AND k.id != ?1",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
@@ -1742,16 +1757,17 @@ pub fn get_sync_status(
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
                 row.get::<_, String>(2)?,
+                row.get::<_, Option<String>>(3)?,
             ))
         })
         .map_err(|e| e.to_string())?;
-    let peers: Vec<(String, String, String)> = rows.filter_map(|r| r.ok()).collect();
-    let peer_ids: Vec<String> = peers.iter().map(|(id, _, _)| id.clone()).collect();
+    let peers: Vec<(String, String, String, Option<String>)> = rows.filter_map(|r| r.ok()).collect();
+    let peer_ids: Vec<String> = peers.iter().map(|(id, _, _, _)| id.clone()).collect();
     let statuses = sync_state.get_all_peers_status(&peer_ids);
     Ok(peers
         .into_iter()
         .zip(statuses.into_iter())
-        .map(|((peer_id, name, ws_url), (_, status))| SyncStatusEntry {
+        .map(|((peer_id, name, ws_url, pinned_fingerprint), (_, status))| SyncStatusEntry {
             peer_id,
             name,
             ws_url,
@@ -1759,6 +1775,7 @@ pub fn get_sync_status(
             last_sync: status.last_sync,
             closeout_ok_for_lauf_id: status.closeout_ok_for_lauf_id,
             closeout_ok_at: status.closeout_ok_at,
+            pinned_fingerprint,
         })
         .collect())
 }
