@@ -14,8 +14,74 @@ use tauri::AppHandle;
 use tauri::Emitter;
 use tauri::Manager;
 use tokio::time::{interval, MissedTickBehavior};
-use tokio_tungstenite::connect_async;
+use tokio::net::TcpStream;
+use tokio_native_tls::TlsConnector;
+use tokio_tungstenite::client_async;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use url::Url;
+
+async fn connect_wss_raw(
+    url: &str,
+) -> Result<
+    (
+        tokio_tungstenite::WebSocketStream<tokio_native_tls::TlsStream<TcpStream>>,
+        String,
+    ),
+    String,
+> {
+    let parsed = Url::parse(url).map_err(|e| e.to_string())?;
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| "Ungültige URL (host fehlt)".to_string())?;
+    let port = parsed.port_or_known_default().ok_or_else(|| "Ungültige URL (port fehlt)".to_string())?;
+    let addr = format!("{}:{}", host, port);
+
+    let tcp = TcpStream::connect(&addr).await.map_err(|e| e.to_string())?;
+
+    let connector = native_tls::TlsConnector::builder()
+        // Pinning (TOFU) is enforced at the app layer; we do not rely on public PKI in LAN.
+        .danger_accept_invalid_certs(true)
+        .danger_accept_invalid_hostnames(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+    let connector = TlsConnector::from(connector);
+
+    let tls = connector.connect(host, tcp).await.map_err(|e| e.to_string())?;
+    let peer_fp = tls
+        .get_ref()
+        .peer_certificate()
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Kein Peer-Zertifikat erhalten".to_string())
+        .and_then(|c| c.to_der().map_err(|e| e.to_string()))
+        .map(|der| crate::tls::sha256_fingerprint_hex(&der))?;
+    let req = url.into_client_request().map_err(|e| e.to_string())?;
+    let (ws, _resp) = client_async(req, tls).await.map_err(|e| e.to_string())?;
+    Ok((ws, peer_fp))
+}
+
+async fn connect_wss(url: &str) -> Result<tokio_tungstenite::WebSocketStream<tokio_native_tls::TlsStream<TcpStream>>, String> {
+    Ok(connect_wss_raw(url).await?.0)
+}
+
+async fn connect_wss_pinned(
+    app: &AppHandle,
+    url: &str,
+    peer_kassen_id: &str,
+) -> Result<tokio_tungstenite::WebSocketStream<tokio_native_tls::TlsStream<TcpStream>>, String> {
+    let (ws, peer_fp) = connect_wss_raw(url).await?;
+    if let Some(expected) = db::get_cert_pin(app, peer_kassen_id).map_err(|e| e.to_string())? {
+        if !expected.trim().is_empty() && expected.trim() != peer_fp {
+            return Err(format!(
+                "TLS Zertifikat-Fingerprint passt nicht zu Pin für {} (expected {}, got {}).",
+                peer_kassen_id,
+                expected.trim(),
+                peer_fp
+            ));
+        }
+    }
+    Ok(ws)
+}
 
 /// Verbindet sich zu master_url, sendet join_request und wartet auf join_approve oder join_reject.
 /// Gibt bei Erfolg die JoinApprove-Daten zurück.
@@ -25,8 +91,9 @@ pub async fn send_join_request(
     name: &str,
     my_ws_url: &str,
     token: &str,
+    cert_fingerprint: &str,
 ) -> Result<JoinApprove, String> {
-    let (ws_stream, _) = connect_async(master_url).await.map_err(|e| e.to_string())?;
+    let ws_stream = connect_wss(master_url).await?;
     let (mut write, mut read) = ws_stream.split();
 
     let msg = Message::JoinRequest(JoinRequest {
@@ -34,6 +101,7 @@ pub async fn send_join_request(
         name: name.to_string(),
         my_ws_url: my_ws_url.to_string(),
         token: token.to_string(),
+        cert_fingerprint: cert_fingerprint.to_string(),
     });
     let json = msg.to_json().map_err(|e| e.to_string())?;
     write
@@ -77,7 +145,7 @@ pub async fn send_slave_reset_request(
     kassen_id: &str,
     max_sequence: i64,
 ) -> Result<AbrechnungslaufReset, String> {
-    let (ws_stream, _) = connect_async(master_url).await.map_err(|e| e.to_string())?;
+    let ws_stream = connect_wss(master_url).await?;
     let (mut write, mut read) = ws_stream.split();
 
     let msg = Message::RequestSlaveReset(RequestSlaveReset {
@@ -114,7 +182,7 @@ pub async fn send_closeout_request(
     max_sequence: i64,
     max_storno_zeitstempel: Option<String>,
 ) -> Result<CloseoutApprove, String> {
-    let (ws_stream, _) = connect_async(master_url).await.map_err(|e| e.to_string())?;
+    let ws_stream = connect_wss(master_url).await?;
     let (mut write, mut read) = ws_stream.split();
 
     let msg = Message::CloseoutRequest(CloseoutRequest {
@@ -151,7 +219,7 @@ pub async fn send_leave_network_request(
     master_url: &str,
     kassen_id: &str,
 ) -> Result<LeaveNetworkAck, String> {
-    let (ws_stream, _) = connect_async(master_url).await.map_err(|e| e.to_string())?;
+    let ws_stream = connect_wss(master_url).await?;
     let (mut write, mut read) = ws_stream.split();
 
     let msg = Message::LeaveNetworkRequest(LeaveNetworkRequest {
@@ -186,9 +254,7 @@ pub async fn run_sync_to_peer(
     peer_ws_url: &str,
     peer_kassen_id: &str,
 ) -> Result<(), String> {
-    let (ws_stream, _) = connect_async(peer_ws_url)
-        .await
-        .map_err(|e| e.to_string())?;
+    let ws_stream = connect_wss_pinned(&app, peer_ws_url, peer_kassen_id).await?;
     let (mut write, mut read) = ws_stream.split();
 
     if let Some(state) = app.try_state::<SyncStatusState>() {

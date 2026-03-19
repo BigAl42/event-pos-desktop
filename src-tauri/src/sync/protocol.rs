@@ -91,12 +91,15 @@ pub struct JoinRequest {
     pub name: String,
     pub my_ws_url: String,
     pub token: String,
+    pub cert_fingerprint: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JoinApprove {
+    pub master_kassen_id: String,
     pub peers: Vec<PeerInfo>,
     pub haendler: Vec<HaendlerInfo>,
+    pub master_cert_fingerprint: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub active_abrechnungslauf_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -110,6 +113,8 @@ pub struct PeerInfo {
     pub kassen_id: String,
     pub name: String,
     pub ws_url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cert_fingerprint: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

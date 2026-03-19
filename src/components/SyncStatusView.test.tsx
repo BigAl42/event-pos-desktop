@@ -34,7 +34,7 @@ describe("SyncStatusView", () => {
       {
         peer_id: "peer1",
         name: "Peer 1",
-        ws_url: "ws://peer",
+        ws_url: "wss://peer",
         connected: true,
         last_sync: null,
         closeout_ok_for_lauf_id: "lauf-old",
@@ -57,7 +57,7 @@ describe("SyncStatusView", () => {
       {
         peer_id: "peer1",
         name: "Peer 1",
-        ws_url: "ws://peer",
+        ws_url: "wss://peer",
         connected: true,
         last_sync: null,
         closeout_ok_for_lauf_id: "lauf-active",

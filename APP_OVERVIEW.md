@@ -49,8 +49,8 @@
   - Drilldown als eigene View im globalen View-State mit sichtbarem Zurück-Button in den fachlich passenden Kontext.
 
 ## Tests & Qualität
-- **Vor jedem Commit**: `npm run test:all` (Frontend: Vitest, Backend: `cargo test --features test` in `src-tauri/`).
-- **Husky**: `.husky/pre-commit` führt `npm run test:all` aus (Commit wird bei Fehlschlag abgebrochen).
+- **Vor jedem Commit**: `npm run test:all`, `npm run build`; zusätzlich einmal `npx tauri build` (vollständiger App-Build), Fehler beheben. Details: `.cursor/rules/tests-vor-commit.mdc`.
+- **Husky**: `.husky/pre-commit` führt `npm run test:all` und `npm run build` aus (Commit wird bei Fehlschlag abgebrochen).
 
 ## Build / Dev (Kurzreferenz)
 - **Dev**: `npm install` → `npm run tauri dev`

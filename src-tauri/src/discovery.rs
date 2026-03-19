@@ -70,7 +70,7 @@ pub async fn discover_masters(timeout_secs: u64) -> Result<Vec<DiscoveredMaster>
                                 .next()
                                 .unwrap_or("Master")
                                 .to_string();
-                            let ws_url = format!("ws://{}:{}", ip, port);
+                            let ws_url = format!("wss://{}:{}", ip, port);
                             results.push(DiscoveredMaster {
                                 name,
                                 host: ip,

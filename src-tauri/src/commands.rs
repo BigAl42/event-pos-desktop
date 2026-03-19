@@ -528,6 +528,7 @@ pub struct JoinRequestItem {
     pub kassen_id: String,
     pub name: String,
     pub my_ws_url: Option<String>,
+    pub cert_fingerprint: Option<String>,
     pub status: String,
     pub created_at: String,
 }
@@ -538,7 +539,7 @@ pub fn get_join_requests(app: tauri::AppHandle) -> Result<Vec<JoinRequestItem>, 
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare(
-            "SELECT id, kassen_id, name, my_ws_url, status, created_at FROM join_requests WHERE status = 'pending' ORDER BY created_at",
+            "SELECT id, kassen_id, name, my_ws_url, cert_fingerprint, status, created_at FROM join_requests WHERE status = 'pending' ORDER BY created_at",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
@@ -548,8 +549,9 @@ pub fn get_join_requests(app: tauri::AppHandle) -> Result<Vec<JoinRequestItem>, 
                 kassen_id: row.get(1)?,
                 name: row.get(2)?,
                 my_ws_url: row.get(3)?,
-                status: row.get(4)?,
-                created_at: row.get(5)?,
+                cert_fingerprint: row.get(4)?,
+                status: row.get(5)?,
+                created_at: row.get(6)?,
             })
         })
         .map_err(|e| e.to_string())?;
@@ -566,11 +568,11 @@ pub fn approve_join_request(
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
 
-    let (name, my_ws_url): (String, Option<String>) = conn
+    let (name, my_ws_url, cert_fingerprint): (String, Option<String>, Option<String>) = conn
         .query_row(
-            "SELECT name, my_ws_url FROM join_requests WHERE kassen_id = ?1 AND status = 'pending'",
+            "SELECT name, my_ws_url, cert_fingerprint FROM join_requests WHERE kassen_id = ?1 AND status = 'pending'",
             rusqlite::params![&kassen_id],
-            |row| Ok((row.get(0)?, row.get(1)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
         .map_err(|_| "Join-Anfrage nicht gefunden oder bereits bearbeitet")?;
 
@@ -588,9 +590,27 @@ pub fn approve_join_request(
     )
     .map_err(|e| e.to_string())?;
 
+    // TOFU: pin fingerprint of the joining peer (best-effort).
+    if let Some(fp) = cert_fingerprint.as_deref() {
+        if !fp.trim().is_empty() {
+            db::set_cert_pin(&app, &kassen_id, fp).map_err(|e| e.to_string())?;
+        }
+    }
+
+    let (identity, master_fp) = crate::tls::ensure_identity_and_fingerprint(&app)?;
+    drop(identity);
+    let master_kassen_id = db::get_config(&app, "kassen_id")
+        .map_err(|e| e.to_string())?
+        .ok_or("Kassen-ID nicht gesetzt")?;
+
     // Peer-Liste: alle Kassen inkl. Master mit ws_url
     let mut peer_stmt = conn
-        .prepare("SELECT id, name, ws_url FROM kassen WHERE ws_url IS NOT NULL AND ws_url != ''")
+        .prepare(
+            "SELECT k.id, k.name, k.ws_url, p.pinned_fingerprint
+             FROM kassen k
+             LEFT JOIN kassen_cert_pins p ON p.peer_kassen_id = k.id
+             WHERE k.ws_url IS NOT NULL AND k.ws_url != ''",
+        )
         .map_err(|e| e.to_string())?;
     let peer_rows = peer_stmt
         .query_map([], |row| {
@@ -598,6 +618,7 @@ pub fn approve_join_request(
                 kassen_id: row.get(0)?,
                 name: row.get(1)?,
                 ws_url: row.get(2)?,
+                cert_fingerprint: row.get(3)?,
             })
         })
         .map_err(|e| e.to_string())?;
@@ -644,8 +665,10 @@ pub fn approve_join_request(
         };
 
     let msg = Message::JoinApprove(JoinApprove {
+        master_kassen_id,
         peers,
         haendler,
+        master_cert_fingerprint: master_fp,
         active_abrechnungslauf_id: lauf_id_opt,
         active_abrechnungslauf_name: lauf_name_opt,
         active_abrechnungslauf_start: lauf_start_opt,
@@ -873,8 +896,10 @@ pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String
         .map_err(|e| e.to_string())?
         .ok_or("Eigene Sync-URL nicht konfiguriert (Einstellungen)")?;
 
+    let (_identity, my_fp) = crate::tls::ensure_identity_and_fingerprint(&app)?;
+
     let approve =
-        client::send_join_request(&master_url, &kassen_id, &name, &my_ws_url, token.trim()).await?;
+        client::send_join_request(&master_url, &kassen_id, &name, &my_ws_url, token.trim(), &my_fp).await?;
 
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
@@ -944,6 +969,19 @@ pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String
             rusqlite::params![&peer.kassen_id, &peer.name, &peer.ws_url],
         )
         .map_err(|e| e.to_string())?;
+    }
+
+    // TOFU: Pin master and peer fingerprints provided by master.
+    if !approve.master_cert_fingerprint.trim().is_empty() {
+        db::set_cert_pin(&app, &approve.master_kassen_id, &approve.master_cert_fingerprint)
+            .map_err(|e| e.to_string())?;
+    }
+    for peer in &approve.peers {
+        if let Some(fp) = peer.cert_fingerprint.as_deref() {
+            if !fp.trim().is_empty() {
+                db::set_cert_pin(&app, &peer.kassen_id, fp).map_err(|e| e.to_string())?;
+            }
+        }
     }
 
     db::set_config(&app, "initialized_from_master", "true").map_err(|e| e.to_string())?;
@@ -1472,7 +1510,7 @@ pub async fn start_sync_connections(app: tauri::AppHandle) -> Result<String, Str
         .rsplit(':')
         .next()
         .and_then(|s| s.parse::<u16>().ok())
-        .ok_or("Ungültige Sync-URL (Port fehlt, z.B. ws://IP:8766)")?;
+        .ok_or("Ungültige Sync-URL (Port fehlt, z.B. wss://IP:8766)")?;
 
     match server::start_ws_server(app.clone(), port).await {
         Ok(approve_tx) => {
@@ -1499,7 +1537,7 @@ pub async fn start_sync_connections(app: tauri::AppHandle) -> Result<String, Str
     );
 
     // Nebenkasse: wenn genau 1 Peer konfiguriert ist, aber die Hauptkassen-URL in config abweicht,
-    // korrigieren wir den Peer-Eintrag auf master_ws_url (häufiger Fall: ws://127.0.0.1 ohne Port).
+    // korrigieren wir den Peer-Eintrag auf master_ws_url (häufiger Fall: wss://127.0.0.1 ohne Port).
     let role = db::get_config(&app, "role")
         .map_err(|e| e.to_string())?
         .unwrap_or_default();
@@ -2077,16 +2115,16 @@ mod tests {
     #[test]
     fn normalize_ws_url_trims_lowercases_and_removes_trailing_slash() {
         assert_eq!(
-            normalize_ws_url("  WS://LOCALHOST:8766/  "),
-            "ws://localhost:8766"
+            normalize_ws_url("  WSS://LOCALHOST:8766/  "),
+            "wss://localhost:8766"
         );
-        assert_eq!(normalize_ws_url("ws://127.0.0.1:8766////"), "ws://127.0.0.1:8766");
+        assert_eq!(normalize_ws_url("wss://127.0.0.1:8766////"), "wss://127.0.0.1:8766");
     }
 
     #[test]
     fn normalize_ws_url_makes_equivalent_urls_equal() {
-        let a = normalize_ws_url("ws://192.168.1.10:8766");
-        let b = normalize_ws_url(" WS://192.168.1.10:8766/ ");
+        let a = normalize_ws_url("wss://192.168.1.10:8766");
+        let b = normalize_ws_url(" WSS://192.168.1.10:8766/ ");
         assert_eq!(a, b);
     }
 }

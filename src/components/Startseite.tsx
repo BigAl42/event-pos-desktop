@@ -74,7 +74,7 @@ export default function Startseite({
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [joinDialogMaster, setJoinDialogMaster] = useState<DiscoveredMaster | null>(null);
   const [joinCode, setJoinCode] = useState("");
-  const [joinMyWsUrl, setJoinMyWsUrl] = useState(`ws://127.0.0.1:${DEFAULT_SYNC_PORT}`);
+  const [joinMyWsUrl, setJoinMyWsUrl] = useState(`wss://127.0.0.1:${DEFAULT_SYNC_PORT}`);
   const [joinLoading, setJoinLoading] = useState(false);
   const [joinMessage, setJoinMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [pendingJoinCount, setPendingJoinCount] = useState(0);
@@ -140,7 +140,7 @@ export default function Startseite({
 
   useEffect(() => {
     if (!joinDialogMaster) return;
-    getConfig("my_ws_url").then((v) => setJoinMyWsUrl(v ?? `ws://127.0.0.1:${DEFAULT_SYNC_PORT}`));
+    getConfig("my_ws_url").then((v) => setJoinMyWsUrl(v ?? `wss://127.0.0.1:${DEFAULT_SYNC_PORT}`));
     setJoinCode("");
     setJoinMessage(null);
   }, [joinDialogMaster]);
@@ -493,12 +493,12 @@ export default function Startseite({
               />
             </label>
             <label className="startseite-join-dialog-label">
-              Eigene Sync-URL (z.B. ws://127.0.0.1:8766)
+              Eigene Sync-URL (z.B. wss://127.0.0.1:8766)
               <input
                 type="text"
                 value={joinMyWsUrl}
                 onChange={(e) => setJoinMyWsUrl(e.target.value)}
-                placeholder={`ws://127.0.0.1:${DEFAULT_SYNC_PORT}`}
+                placeholder={`wss://127.0.0.1:${DEFAULT_SYNC_PORT}`}
                 disabled={joinLoading}
               />
             </label>

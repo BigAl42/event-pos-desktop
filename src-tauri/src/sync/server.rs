@@ -19,6 +19,7 @@ use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use tokio::time::{interval, MissedTickBehavior};
+use tokio_native_tls::TlsAcceptor;
 use tokio_tungstenite::accept_async;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
 
@@ -67,6 +68,11 @@ type RegisterSender = mpsc::UnboundedSender<(String, mpsc::UnboundedSender<Messa
 /// Startet den WebSocket-Server auf 0.0.0.0:port.
 /// Gibt approve_tx zurück; wird in der App gespeichert, damit approve_join_request join_approve senden kann.
 pub async fn start_ws_server(app: AppHandle, port: u16) -> Result<ApproveSender, String> {
+    // Ensure TLS identity exists for this instance and build acceptor.
+    let (identity, _fp) = crate::tls::ensure_identity_and_fingerprint(&app)?;
+    let acceptor = native_tls::TlsAcceptor::new(identity).map_err(|e| e.to_string())?;
+    let acceptor = TlsAcceptor::from(acceptor);
+
     let (approve_tx, approve_rx) = mpsc::unbounded_channel::<(String, Message)>();
     let (register_tx, register_rx) =
         mpsc::unbounded_channel::<(String, mpsc::UnboundedSender<Message>)>();
@@ -103,11 +109,13 @@ pub async fn start_ws_server(app: AppHandle, port: u16) -> Result<ApproveSender,
 
     let app_clone = app.clone();
     tokio::spawn(async move {
+        let acceptor = acceptor;
         while let Ok((stream, _addr)) = listener.accept().await {
             let app_handle = app_clone.clone();
             let reg = register_tx.clone();
+            let acceptor = acceptor.clone();
             tokio::spawn(async move {
-                if let Err(e) = handle_connection(app_handle, stream, reg).await {
+                if let Err(e) = handle_connection(app_handle, stream, reg, acceptor).await {
                     warn!("Verbindung Fehler: {}", e);
                 }
             });
@@ -121,8 +129,11 @@ async fn handle_connection(
     app: AppHandle,
     stream: tokio::net::TcpStream,
     register_tx: RegisterSender,
+    acceptor: TlsAcceptor,
 ) -> Result<(), String> {
-    let ws_stream = accept_async(stream).await.map_err(|e| e.to_string())?;
+    // TLS handshake, then WebSocket upgrade.
+    let tls_stream = acceptor.accept(stream).await.map_err(|e| e.to_string())?;
+    let ws_stream = accept_async(tls_stream).await.map_err(|e| e.to_string())?;
     let (mut write, mut read) = ws_stream.split();
 
     // Erste Nachricht sollte join_request sein
@@ -192,12 +203,13 @@ async fn handle_connection(
         return Ok(());
     }
 
-    let (kassen_id, name, my_ws_url, token) = match &msg {
+    let (kassen_id, name, my_ws_url, token, cert_fingerprint) = match &msg {
         Message::JoinRequest(jr) => (
             jr.kassen_id.clone(),
             jr.name.clone(),
             jr.my_ws_url.clone(),
             jr.token.clone(),
+            jr.cert_fingerprint.clone(),
         ),
         _ => {
             let _ = write
@@ -243,8 +255,8 @@ async fn handle_connection(
 
     let id = uuid::Uuid::new_v4().to_string();
     conn.execute(
-        "INSERT INTO join_requests (id, kassen_id, name, status, my_ws_url) VALUES (?1, ?2, ?3, 'pending', ?4)",
-        rusqlite::params![id, kassen_id, name, my_ws_url],
+        "INSERT INTO join_requests (id, kassen_id, name, status, my_ws_url, cert_fingerprint) VALUES (?1, ?2, ?3, 'pending', ?4, ?5)",
+        rusqlite::params![id, kassen_id, name, my_ws_url, cert_fingerprint],
     )
     .map_err(|e| e.to_string())?;
 

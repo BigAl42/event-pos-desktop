@@ -84,6 +84,11 @@ export default function JoinAnfragenView({ onBack }: Props) {
                 {req.my_ws_url && (
                   <span className="joinanfragen-url">Sync-URL: {req.my_ws_url}</span>
                 )}
+                {req.cert_fingerprint && (
+                  <span className="joinanfragen-url">
+                    Zertifikat-Fingerprint: <code>{req.cert_fingerprint}</code>
+                  </span>
+                )}
                 <div className="joinanfragen-actions">
                   <button
                     type="button"

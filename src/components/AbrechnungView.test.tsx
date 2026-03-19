@@ -235,7 +235,7 @@ describe("AbrechnungView", () => {
       {
         peer_id: "peer1",
         name: "Peer 1",
-        ws_url: "ws://x",
+        ws_url: "wss://x",
         connected: true,
         last_sync: null,
         closeout_ok_for_lauf_id: null,
@@ -259,7 +259,7 @@ describe("AbrechnungView", () => {
       {
         peer_id: "peer1",
         name: "Peer 1",
-        ws_url: "ws://x",
+        ws_url: "wss://x",
         connected: true,
         last_sync: null,
         closeout_ok_for_lauf_id: "1",
@@ -299,7 +299,7 @@ describe("AbrechnungView", () => {
       {
         peer_id: "peer1",
         name: "Peer 1",
-        ws_url: "ws://x",
+        ws_url: "wss://x",
         connected: true,
         last_sync: null,
         closeout_ok_for_lauf_id: "1",
@@ -426,7 +426,7 @@ describe("AbrechnungView", () => {
       {
         peer_id: "peer-offline",
         name: "Nebenkasse X",
-        ws_url: "ws://y",
+        ws_url: "wss://y",
         connected: true,
         last_sync: null,
         closeout_ok_for_lauf_id: null,

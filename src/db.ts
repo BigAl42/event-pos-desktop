@@ -442,6 +442,7 @@ export type JoinRequestItem = {
   kassen_id: string;
   name: string;
   my_ws_url: string | null;
+  cert_fingerprint: string | null;
   status: string;
   created_at: string;
 };

@@ -13,7 +13,7 @@ function sampleDto(): NotfallExportDto {
       exporting_kasse_id: "kasse-a",
       exporting_kasse_name: "Kasse A",
     },
-    kassen: [{ id: "kasse-a", name: "Kasse A", is_master: 1, ws_url: "ws://127.0.0.1:8765" }],
+    kassen: [{ id: "kasse-a", name: "Kasse A", is_master: 1, ws_url: "wss://127.0.0.1:8765" }],
     kundenabrechnungen: [
       {
         id: "ka-1",

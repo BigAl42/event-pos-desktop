@@ -351,7 +351,7 @@ export default function EinstellungenView({ onBack, onOpenHandbuch }: Props) {
       return;
     }
     if (!myWsUrl.trim()) {
-      setJoinMessage({ ok: false, text: "Bitte eigene Sync-URL eintragen (z.B. ws://DEINE_IP:8766)." });
+      setJoinMessage({ ok: false, text: "Bitte eigene Sync-URL eintragen (z.B. wss://DEINE_IP:8766)." });
       return;
     }
     setJoinLoading(true);
@@ -502,7 +502,7 @@ export default function EinstellungenView({ onBack, onOpenHandbuch }: Props) {
                   value={myWsUrl}
                   onChange={(e) => setMyWsUrl(e.target.value)}
                   onBlur={handleSaveMasterConfig}
-                  placeholder="ws://IP:8765"
+                  placeholder="wss://IP:8765"
                 />
               </label>
             </div>
@@ -577,7 +577,7 @@ export default function EinstellungenView({ onBack, onOpenHandbuch }: Props) {
                 type="button"
                 className="einstellungen-discovery-local"
                 onClick={async () => {
-                  const localUrl = `ws://127.0.0.1:${DEFAULT_WS_PORT}`;
+                  const localUrl = `wss://127.0.0.1:${DEFAULT_WS_PORT}`;
                   setMasterWsUrl(localUrl);
                   await setConfig("master_ws_url", localUrl);
                 }}
@@ -637,7 +637,7 @@ export default function EinstellungenView({ onBack, onOpenHandbuch }: Props) {
                   value={masterWsUrl}
                   onChange={(e) => setMasterWsUrl(e.target.value)}
                   onBlur={handleSaveSlaveConfig}
-                  placeholder="ws://IP:8765"
+                  placeholder="wss://IP:8765"
                 />
               </label>
               <label className="einstellungen-grid-span">
@@ -647,7 +647,7 @@ export default function EinstellungenView({ onBack, onOpenHandbuch }: Props) {
                   value={myWsUrl}
                   onChange={(e) => setMyWsUrl(e.target.value)}
                   onBlur={handleSaveSlaveConfig}
-                  placeholder="ws://IP:8766"
+                  placeholder="wss://IP:8766"
                 />
               </label>
               <label>

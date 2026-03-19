@@ -1,21 +1,37 @@
 ---
-description: Vor jedem Commit müssen alle Tests laufen und grün sein.
+description: Vor jedem Commit müssen Tests grün sein, Frontend-Build und vollständiger Tauri-Build einmal erfolgreich durchlaufen.
 alwaysApply: true
 ---
 
-# Tests vor Commit
+# Tests und Build vor Commit
+
+## Tests
 
 - **Vor jedem Commit müssen alle Tests erfolgreich durchlaufen.**
   - Es wird **nicht** committet, wenn Tests fehlschlagen oder übersprungen werden, um einen Commit zu erzwingen.
   - Vor dem Commit immer `npm run test:all` ausführen (Frontend: Vitest, Backend: `cargo test --features test` in `src-tauri/`).
 
-- **Pre-Commit-Hook (Husky)**
-  - Der Hook unter `.husky/pre-commit` führt `npm run test:all` aus. Schlägt das fehl, wird der Commit abgebrochen.
-  - In CI-Umgebungen kann `HUSKY=0` gesetzt werden, um den Hook zu deaktivieren (die Pipeline führt die Tests ohnehin aus).
+## Build (Pflicht)
 
-- **Manuell vor dem Commit**
-  - Im Projektroot: `npm run test:all` (läuft Frontend-Tests und Rust-Tests mit Feature `test`).
-  - Alternativ: `npm run test:run` und `cd src-tauri && cargo test --features test`.
+- **Zusätzlich zu den Tests muss die App mindestens einmal erfolgreich gebaut werden**, bevor als „commit-fertig“ gilt. Auftretende Fehler (TypeScript, Vite, Rust/Linker, Tauri) sind zu beheben.
+  1. **Frontend-Produktionsbuild** (entspricht Tauris `beforeBuildCommand`): im Projektroot `npm run build` (`tsc -b && vite build`).
+  2. **Vollständiger Tauri-Produktionsbuild**: im Projektroot `npx tauri build` (baut Frontend + Rust-Binary/App). Lokal ggf. `CI=false npx tauri build`, falls die Umgebung sonst anders konfiguriert ist.
 
-- **Neue oder geänderte Funktionalität**
-  - Neue oder geänderte Features werden von passenden Tests abgedeckt; bestehende Tests bleiben grün.
+## Pre-Commit-Hook (Husky)
+
+- Der Hook unter `.husky/pre-commit` führt `npm run test:all` und `npm run build` aus. Schlägt etwas fehl, wird der Commit abgebrochen.
+- Der **vollständige** Schritt `npx tauri build` ist in der Regel vor dem Commit auszuführen (manuell oder vom Agenten), wird aber **nicht** zwingend vom Hook ausgeführt (Laufzeit). Vor größeren Releases oder wenn nur Rust/Tauri geändert wurde, ist er besonders wichtig.
+- In CI-Umgebungen kann `HUSKY=0` gesetzt werden, um den Hook zu deaktivieren (die Pipeline führt Qualitätschecks ohnehin aus).
+
+## Manuell vor dem Commit
+
+- Im Projektroot nacheinander:
+  - `npm run test:all`
+  - `npm run build`
+  - `npx tauri build` (bei Bedarf `CI=false` voranstellen)
+- Alternativ Tests einzeln: `npm run test:run` und `cd src-tauri && cargo test --features test`.
+
+## Neue oder geänderte Funktionalität
+
+- Neue oder geänderte Features werden von passenden Tests abgedeckt; bestehende Tests bleiben grün.
+- Änderungen am Build (Dependencies, Tauri-Config, Rust) müssen durch die obigen Build-Schritte verifiziert werden.

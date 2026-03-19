@@ -100,7 +100,26 @@ describe("Statuszeile", () => {
 
   it("shows join button when master has pending requests and onOpenJoinAnfragen provided", async () => {
     mockRole = "master";
-    mockGetJoinRequests.mockResolvedValue([{ id: "1", kassen_id: "k1", name: "K1", my_ws_url: null, status: "pending", created_at: "" }, { id: "2", kassen_id: "k2", name: "K2", my_ws_url: null, status: "pending", created_at: "" }]);
+    mockGetJoinRequests.mockResolvedValue([
+      {
+        id: "1",
+        kassen_id: "k1",
+        name: "K1",
+        my_ws_url: null,
+        cert_fingerprint: null,
+        status: "pending",
+        created_at: "",
+      },
+      {
+        id: "2",
+        kassen_id: "k2",
+        name: "K2",
+        my_ws_url: null,
+        cert_fingerprint: null,
+        status: "pending",
+        created_at: "",
+      },
+    ]);
 
     const onOpenJoinAnfragen = vi.fn();
     render(<Statuszeile onOpenJoinAnfragen={onOpenJoinAnfragen} />);
@@ -115,7 +134,9 @@ describe("Statuszeile", () => {
 
   it("shows singular Join-Anfrage when one pending request", async () => {
     mockRole = "master";
-    mockGetJoinRequests.mockResolvedValue([{ id: "1", kassen_id: "k1", name: "K1", my_ws_url: null, status: "pending", created_at: "" }]);
+    mockGetJoinRequests.mockResolvedValue([
+      { id: "1", kassen_id: "k1", name: "K1", my_ws_url: null, cert_fingerprint: null, status: "pending", created_at: "" },
+    ]);
 
     render(<Statuszeile onOpenJoinAnfragen={() => {}} />);
 
@@ -126,7 +147,9 @@ describe("Statuszeile", () => {
 
   it("does not show join button when onOpenJoinAnfragen is not provided", async () => {
     mockRole = "master";
-    mockGetJoinRequests.mockResolvedValue([{ id: "1", kassen_id: "k1", name: "K1", my_ws_url: null, status: "pending", created_at: "" }]);
+    mockGetJoinRequests.mockResolvedValue([
+      { id: "1", kassen_id: "k1", name: "K1", my_ws_url: null, cert_fingerprint: null, status: "pending", created_at: "" },
+    ]);
 
     render(<Statuszeile />);
 

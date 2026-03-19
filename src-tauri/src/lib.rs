@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod db;
 mod discovery;
+mod tls;
 pub mod sync;
 
 /// Einmalige Erzeugung des Tauri-Kontexts (vermeidet doppelte Symbol-Definition in Tests).

@@ -1,6 +1,7 @@
 //! Datenbank-Initialisierung und Migrationen
 
 use rusqlite::Connection;
+use rusqlite::OptionalExtension;
 use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
@@ -145,6 +146,18 @@ pub fn init_db(app: &AppHandle) -> Result<String, String> {
         run_migration_007(&conn)?;
     }
 
+    // TLS: Zertifikat-Pinning
+    let applied_008: bool = conn
+        .query_row(
+            "SELECT COUNT(*) FROM schema_migrations WHERE version='008_tls_cert_pins'",
+            [],
+            |row| Ok(row.get::<_, i32>(0)? == 1),
+        )
+        .map_err(|e| e.to_string())?;
+    if !applied_008 {
+        run_migration_008(&conn)?;
+    }
+
     Ok(path_str)
 }
 
@@ -190,6 +203,12 @@ fn run_migration_007(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+fn run_migration_008(conn: &Connection) -> Result<(), String> {
+    let sql = include_str!("../migrations/008_tls_cert_pins.sql");
+    conn.execute_batch(sql).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Config-Wert lesen (für Rust/Backend).
 pub fn get_config(app: &AppHandle, key: &str) -> Result<Option<String>, String> {
     let path = db_path(app)?;
@@ -211,6 +230,31 @@ pub fn set_config(app: &AppHandle, key: &str, value: &str) -> Result<(), String>
     conn.execute(
         "INSERT OR REPLACE INTO config (key, value) VALUES (?1, ?2)",
         rusqlite::params![key, value],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Gibt den gepinnten Zertifikat-Fingerprint für einen Peer zurück (TOFU/Pinning).
+pub fn get_cert_pin(app: &AppHandle, peer_kassen_id: &str) -> Result<Option<String>, String> {
+    let path = db_path(app)?;
+    let conn = Connection::open(&path).map_err(|e| e.to_string())?;
+    conn.query_row(
+        "SELECT pinned_fingerprint FROM kassen_cert_pins WHERE peer_kassen_id = ?1 LIMIT 1",
+        rusqlite::params![peer_kassen_id],
+        |row| row.get(0),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
+/// Setzt/überschreibt den gepinnten Zertifikat-Fingerprint für einen Peer.
+pub fn set_cert_pin(app: &AppHandle, peer_kassen_id: &str, fingerprint: &str) -> Result<(), String> {
+    let path = db_path(app)?;
+    let conn = Connection::open(&path).map_err(|e| e.to_string())?;
+    conn.execute(
+        "INSERT OR REPLACE INTO kassen_cert_pins (peer_kassen_id, pinned_fingerprint, pinned_at) VALUES (?1, ?2, datetime('now'))",
+        rusqlite::params![peer_kassen_id, fingerprint],
     )
     .map_err(|e| e.to_string())?;
     Ok(())

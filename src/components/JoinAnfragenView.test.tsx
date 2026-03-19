@@ -19,7 +19,8 @@ function mockRequest(overrides: Partial<JoinRequestItem> = {}): JoinRequestItem 
     id: "req-1",
     kassen_id: "kassen-abc",
     name: "Nebenkasse 1",
-    my_ws_url: "ws://127.0.0.1:8766",
+    my_ws_url: "wss://127.0.0.1:8766",
+    cert_fingerprint: null,
     status: "pending",
     created_at: new Date().toISOString(),
     ...overrides,
@@ -74,7 +75,7 @@ describe("JoinAnfragenView", () => {
       expect(screen.getByText("Stand 2")).toBeInTheDocument();
     });
     expect(screen.getByText("kassen-xyz")).toBeInTheDocument();
-    expect(screen.getByText(/Sync-URL: ws:\/\/127.0.0.1:8766/)).toBeInTheDocument();
+    expect(screen.getByText(/Sync-URL: wss:\/\/127.0.0.1:8766/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Annehmen/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Ablehnen/ })).toBeInTheDocument();
   });
