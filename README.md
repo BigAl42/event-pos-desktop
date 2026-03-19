@@ -77,6 +77,38 @@ npm run test:all
 
 In der CI laufen zusätzlich Lint (`npm run lint`) und optional der Tauri-Build.
 
+### Rust-Tests in Linux-Docker (Mac/Windows vergleichbar)
+
+Für reproduzierbare Rust-/Integrationstest-Ergebnisse auf macOS und Windows kann dieselbe Linux-Umgebung wie in CI genutzt werden:
+
+```bash
+npm run test:rust:docker
+```
+
+Nur die Ring-Tests:
+
+```bash
+npm run test:rust:docker -- --test sync_ring_n3
+```
+
+Der Script-Aufruf baut `docker/rust-tests/Dockerfile` und startet dann `scripts/docker-rust-test-inner.sh` (Xvfb + `cargo test --features test`) in `src-tauri` innerhalb des Containers (virtuelles X11 für GTK/Tao in headless Docker).
+Das Docker-Image enthält die Linux-Build-Abhängigkeiten für Tauri/GTK (u. a. `libgtk-3-dev`, `libwebkit2gtk-4.1-dev`), damit Rust-Tests im Container nicht an fehlenden `gdk-3.0`/WebKit-Paketen scheitern.
+Zusätzlich nutzt das Image den **mold**-Linker und setzt `CARGO_BUILD_JOBS=1`, um RAM-Spitzen beim Linken zu reduzieren.
+
+**Speicher:** Wenn der Build mit `ld terminated with signal 9 [Killed]` oder `collect2: ... signal 9` abbricht, hat der Linker meist ein **RAM-Limit** erreicht (typisch bei Docker Desktop). In den Docker-Einstellungen **Memory** erhöhen (z. B. **8 GB oder mehr**) und den Lauf wiederholen.
+
+Optional mehr parallele Jobs (nur wenn genug RAM): `KASSEN_DOCKER_CARGO_JOBS=2 npm run test:rust:docker`.
+
+Falls Ring-Tests mit Tao/EventLoop-Fehlern scheitern, einmal mit **einem** Test-Thread ausführen:  
+`npm run test:rust:docker -- --test sync_ring_n3 -- --test-threads=1`
+
+Windows-Hinweis: Das npm-Skript nutzt `bash`; falls lokal kein Bash verfügbar ist, den Docker-Befehl direkt ausführen:
+
+```bash
+docker build -f docker/rust-tests/Dockerfile -t kassensystem-rust-tests .
+docker run --rm -t -v "${PWD}:/workspace" -w /workspace/src-tauri kassensystem-rust-tests bash /workspace/scripts/docker-rust-test-inner.sh 1 --test sync_ring_n3
+```
+
 ## Hinweise
 
 - DB: SQLite im App-Datenverzeichnis; Migrationen unter `src-tauri/migrations/`.

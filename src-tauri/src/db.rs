@@ -12,17 +12,14 @@ const ENV_INSTANCE: &str = "KASSEN_INSTANCE";
 /// Umgebungsvariable für Integrationstests: falls gesetzt, wird dieses Verzeichnis als DB-Basis genutzt.
 const ENV_TEST_DB_DIR: &str = "KASSEN_TEST_DB_DIR";
 
-/// Gibt das Verzeichnis zurück, in dem die DB und weitere lokale Artefakte dieser Instanz liegen.
-/// Mit Umgebungsvariable KASSEN_INSTANCE (z. B. "master", "slave") wird ein Unterordner genutzt.
-/// In Tests kann KASSEN_TEST_DB_DIR gesetzt werden, um ein temporäres Verzeichnis zu nutzen.
-pub fn instance_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    let base = if let Ok(test_dir) = std::env::var(ENV_TEST_DB_DIR) {
-        PathBuf::from(test_dir)
-    } else {
-        app.path()
-            .app_data_dir()
-            .map_err(|e: tauri::Error| e.to_string())?
-    };
+/// Pro [`AppHandle`] festes Test-Datenverzeichnis (Integrationtests mit mehreren Knoten).
+/// Ohne das würde jeder `db_path`-Aufruf nur `KASSEN_TEST_DB_DIR` lesen — die Variable zeigt nach
+/// mehreren `spawn_node` immer nur auf den **zuletzt** gestarteten Knoten → falsche DB / FK-Fehler.
+#[cfg(feature = "test")]
+#[derive(Clone)]
+pub struct TestInstanceDir(pub PathBuf);
+
+fn resolve_instance_subdir(base: PathBuf) -> Result<PathBuf, String> {
     fs::create_dir_all(&base).map_err(|e| e.to_string())?;
     let dir = match std::env::var(ENV_INSTANCE) {
         Ok(instance) if !instance.trim().is_empty() => {
@@ -33,6 +30,25 @@ pub fn instance_dir(app: &AppHandle) -> Result<PathBuf, String> {
         _ => base,
     };
     Ok(dir)
+}
+
+/// Gibt das Verzeichnis zurück, in dem die DB und weitere lokale Artefakte dieser Instanz liegen.
+/// Mit Umgebungsvariable KASSEN_INSTANCE (z. B. "master", "slave") wird ein Unterordner genutzt.
+/// In Tests kann KASSEN_TEST_DB_DIR gesetzt werden, um ein temporäres Verzeichnis zu nutzen.
+pub fn instance_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    #[cfg(feature = "test")]
+    if let Some(st) = app.try_state::<TestInstanceDir>() {
+        return resolve_instance_subdir(st.0.clone());
+    }
+
+    let base = if let Ok(test_dir) = std::env::var(ENV_TEST_DB_DIR) {
+        PathBuf::from(test_dir)
+    } else {
+        app.path()
+            .app_data_dir()
+            .map_err(|e: tauri::Error| e.to_string())?
+    };
+    resolve_instance_subdir(base)
 }
 
 /// Gibt den Pfad zur SQLite-Datenbank im App-Datenverzeichnis zurück.

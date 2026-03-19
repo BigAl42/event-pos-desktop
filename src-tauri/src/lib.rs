@@ -10,7 +10,14 @@ fn tauri_context() -> tauri::Context<tauri::Wry> {
 }
 
 fn app_builder() -> tauri::Builder<tauri::Wry> {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // In Integrationstests wird die App von libtest in einem Test-Thread gebaut.
+    // Auf Linux/Windows muss dafür der Tao-EventLoop explizit für "any thread" erlaubt werden,
+    // sonst panikt Tao mit "EventLoop outside of the main thread".
+    #[cfg(all(feature = "test", any(target_os = "linux", target_os = "windows")))]
+    let builder = builder.any_thread();
+
+    builder
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
@@ -79,7 +86,11 @@ pub fn run() {
 /// Vor dem Aufruf muss KASSEN_TEST_DB_DIR auf ein temporäres Verzeichnis gesetzt werden.
 #[cfg(feature = "test")]
 pub fn build_test_app() -> (tauri::App<tauri::Wry>, tauri::AppHandle) {
-    let app = app_builder()
+    let mut builder = app_builder();
+    if let Ok(dir) = std::env::var("KASSEN_TEST_DB_DIR") {
+        builder = builder.manage(crate::db::TestInstanceDir(std::path::PathBuf::from(dir)));
+    }
+    let app = builder
         .build(tauri_context())
         .expect("failed to build app for test");
     let handle = app.handle().clone();

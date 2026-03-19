@@ -12,6 +12,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:all": "npm run test:run && cd src-tauri && cargo test --features test",
+    "test:rust:docker": "bash scripts/docker-rust-test.sh",
     "tauri": "tauri",
     "tauri:master": "cross-env KASSEN_INSTANCE=master npm run tauri dev",
     "tauri:slave": "cross-env KASSEN_INSTANCE=slave npm run tauri dev -- --config src-tauri/tauri.slave.json"

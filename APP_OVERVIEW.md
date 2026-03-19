@@ -51,6 +51,8 @@
 ## Tests & Qualität
 - **Vor jedem Commit**: `npm run test:all`, `npm run build`; zusätzlich einmal `npx tauri build` (vollständiger App-Build), Fehler beheben. Details: `.cursor/rules/tests-vor-commit.mdc`.
 - **Husky**: `.husky/pre-commit` führt `npm run test:all` und `npm run build` aus (Commit wird bei Fehlschlag abgebrochen).
+- **N=3 Ring-Sync (Rust)**: `src-tauri/tests/sync_ring_n3.rs` – **ein** libtest-Eintrag führt beide Szenarien nacheinander aus (kein paralleler GTK-Start); auf **macOS** per `ignore` übersprungen (`0 passed; 1 ignored` ist erwartet); Ausführung auf **Linux/Windows** oder CI (`cargo test --features test --test sync_ring_n3` in `src-tauri/`).
+- **Linux-Docker für Rust-Tests**: `npm run test:rust:docker` nutzt `docker/rust-tests/Dockerfile` und `scripts/docker-rust-test-inner.sh` (Xvfb + `cargo test --features test` in `src-tauri/`); damit sind Ergebnisse auf macOS/Windows mit CI-Linux besser vergleichbar. Image: GTK/WebKit-Dev-Pakete, **mold**-Linker, `-j 1` gegen RAM-Spitzen; bei `signal 9 [Killed]` beim Linken Docker-RAM erhöhen (z. B. 8 GB+).
 
 ## Build / Dev (Kurzreferenz)
 - **Dev**: `npm install` → `npm run tauri dev`

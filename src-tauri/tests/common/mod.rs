@@ -1,5 +1,7 @@
 //! Gemeinsame Hilfsfunktionen für Integrationstests: temporäre DB und App-Handle.
 
+pub mod cluster;
+
 use app_lib::{self, db};
 use std::env;
 use tempfile::TempDir;
