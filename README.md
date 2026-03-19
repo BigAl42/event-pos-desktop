@@ -81,4 +81,4 @@ In der CI laufen zusätzlich Lint (`npm run lint`) und optional der Tauri-Build.
 
 - DB: SQLite im App-Datenverzeichnis; Migrationen unter `src-tauri/migrations/`.
 - Sync/Backend: Rust Commands unter `src-tauri/src/commands.rs`, Sync-Protokoll unter `src-tauri/src/sync/`.
-- Handbuch: Markdown unter `docs/handbuch/` (TOC aus Frontmatter: `title`, `order`, `slug`), Anzeige in `src/components/HandbuchView.tsx`.
+- Handbuch: Markdown unter `docs/handbuch/` (TOC aus Frontmatter: `title`, `order`, `slug`; Einstiege „Kassierer“ / „Technik“ + Themenkapitel), Anzeige in `src/components/HandbuchView.tsx`.

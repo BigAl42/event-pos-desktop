@@ -6,17 +6,27 @@ slug: index
 
 # Handbuch Kassensystem
 
-Willkommen in der Bedienungsanleitung. Dieses Handbuch gehört zur jeweiligen App-Version und ist offline verfügbar.
+Willkommen in der Bedienungsanleitung. Dieses Handbuch gehört zur jeweiligen App-Version und ist **offline** verfügbar.
 
-## Schnellstart
+## Zwei Einstiege
 
-- **Kasse**: Kundenabrechnung erfassen (Händlernummer, Betrag, optional Bezeichnung).
-- **Abrechnung**: Summen pro Händler anzeigen und pro Händler eine PDF-Abrechnung erstellen.
-- **Einstellungen**: Kassenname, Besetzung, Netzwerk (Hauptkasse/Nebenkasse) und Abrechnungsläufe verwalten.
+- **[Kassierer (Bedienung)](handbuch://kassierer)** – Kasse, Storno, Abrechnung aus Nutzersicht.
+- **[Technik / Administration](handbuch://technik)** – Einrichtung, Netzwerk, Sync, Händler, Notfallmodus.
 
-## Rollen
+## Schnellstart (Kassierer)
 
-- **Hauptkasse (Master)**: Server für Nebenkassen, Händlerverwaltung, Abrechnungslauf abschließen.
-- **Nebenkasse (Slave)**: Verbindung zur Hauptkasse, Closeout anfragen, read-only Händlerübersicht.
+1. **Startseite** → **Kasse** → Positionen erfassen → **Kundenabrechnung abschließen**.
+2. Bei Fehlbuchung: **Storno** → Beleg wählen → Position oder ganzen Beleg stornieren.
+3. **Abrechnung**: Summen prüfen, bei Bedarf **PDF erstellen** oder **Alle PDFs erstellen**.
 
-Weitere Kapitel findest du in der linken Navigation.
+## Handbuch in der App
+
+- **Einstiege**: Kachel **Handbuch** auf der Startseite, Link in den **Einstellungen**, **Hilfe** in der **Statuszeile** (Fußleiste).
+- **PDF**: Oben in der Handbuch-Ansicht **Aktuelles Kapitel als PDF** oder **Gesamtes Handbuch als PDF**.
+
+## Rollen (Kurz)
+
+- **Hauptkasse (Master)**: Server für Nebenkassen, Händlerverwaltung, Join-Anfragen, **Abrechnungslauf abschließen** (Wizard).
+- **Nebenkasse (Slave)**: Mit Hauptkasse verbinden, buchen, Closeout vor Abmeldung; Händlerübersicht nur **Lesen**.
+
+Mehr Kontext: [Überblick](handbuch://ueberblick) · Technische Einrichtung: [Technik / Administration](handbuch://technik)

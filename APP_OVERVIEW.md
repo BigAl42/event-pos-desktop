@@ -8,7 +8,7 @@
 - **Erststart**: „Als Master einrichten?“ oder „Netz beitreten“; Kassenname + 2 Personen erfassen.
 - **Startseite**: Tiles für **Kasse**, **Abrechnung**, **Handbuch**, **Einstellungen**; Sync-/Verbindungsstatus in der **Statuszeile (Footer)**.
   - **Nebenkasse**: Join-/Verbinden-UI nur bei fehlender Verbindung/Sync-Fehler + sichtbare **Closeout/Abmelden**-Kachel (führt zu Einstellungen).
-- **Handbuch**: Markdown-Inhalte aus `docs/handbuch/` (pro Release gebundelt); TOC aus Frontmatter (`title`, `order`, `slug`). Eigene View mit TOC links, Inhalt rechts (react-markdown + remark-gfm). Einstiege: Startseite-Tile, Einstellungen-Header, Statuszeile „Hilfe“. **PDF-Export**: aktuelles Kapitel oder ganzes Handbuch via html2pdf.js + Save-Dialog + Tauri FS.
+- **Handbuch**: Markdown-Inhalte aus `docs/handbuch/` (pro Release gebundelt); TOC aus Frontmatter (`title`, `order`, `slug`). Struktur: Einstiege **Kassierer (Bedienung)** und **Technik / Administration**, dann Themenkapitel (Kasse, Storno, Abrechnung, Erststart, Einstellungen, Join-Anfragen, Sync-Status, Händler, Notfallmodus, Überblick). Eigene View mit TOC links, Inhalt rechts (react-markdown + remark-gfm). Einstiege: Startseite-Tile, Einstellungen-Header, Statuszeile „Hilfe“. **PDF-Export**: aktuelles Kapitel oder ganzes Handbuch via html2pdf.js + Save-Dialog + Tauri FS.
 - **Kasse**:
   - Kundenabrechnung mit 1–n Positionen: Händlernummer, Betrag, optional Bezeichnung.
   - Besetzung (Person 1/2) anzeigen/ändern.
