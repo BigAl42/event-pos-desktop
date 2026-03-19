@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getHandbuchToc, getHandbuchChapter, getAllHandbuchEntries } from "../handbuch/handbuchIndex";
 import { elementToPdfBytes, saveHandbuchPdf, sanitizePdfFilename } from "../utils/handbuchPdfExport";
@@ -56,13 +56,23 @@ export default function HandbuchView({ onBack, initialSlug }: Props) {
     };
   }, [slug]);
 
+  function normalizeInternalSlug(rawSlug: string): string {
+    let normalized = rawSlug.trim();
+    try {
+      normalized = decodeURIComponent(normalized);
+    } catch {
+      // Keep original slug when decoding fails.
+    }
+    normalized = normalized.replace(/^\/+/, "").replace(/\/+$/, "").trim();
+    return normalized || "index";
+  }
+
   function getInternalSlug(href: string): string | null {
     if (href.startsWith("#")) {
-      const s = href.slice(1).trim();
-      return s || "index";
+      return normalizeInternalSlug(href.slice(1));
     }
     if (href.startsWith("handbuch://") || href.startsWith("handbuch:")) {
-      return href.replace(/^handbuch:?\/?\/*/, "").trim() || "index";
+      return normalizeInternalSlug(href.replace(/^handbuch:(\/\/)?/, ""));
     }
     return null;
   }
@@ -176,6 +186,12 @@ export default function HandbuchView({ onBack, initialSlug }: Props) {
               <div className="handbuch-markdown">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  urlTransform={(url) => {
+                    if (url.startsWith("handbuch://") || url.startsWith("handbuch:")) {
+                      return url;
+                    }
+                    return defaultUrlTransform(url);
+                  }}
                   components={{
                     a: ({ href, children, ...props }) => {
                       const internalSlug = href ? getInternalSlug(href) : null;
