@@ -28,7 +28,7 @@ jobs:
           key: cargo-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.lock', 'src-tauri/Cargo.toml') }}
 
       - name: Run cargo test (with test feature for integration tests)
-        run: cd src-tauri && cargo test --features test
+        run: cd src-tauri && cargo test --features test -- --test-threads=1
 
   frontend:
     name: Frontend tests
