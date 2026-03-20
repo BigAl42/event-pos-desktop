@@ -36,16 +36,17 @@ function computeStatusText(args: {
   notConfigured: boolean;
   total: number;
   connected: number;
+  language: string;
 }): string {
-  const { syncError, notConfigured, total, connected } = args;
+  const { syncError, notConfigured, total, connected, language } = args;
   if (syncError) {
     return notConfigured
-      ? i18n.t("syncStatus.notConfigured")
-      : i18n.t("syncStatus.unavailable");
+      ? i18n.t("syncStatus.notConfigured", { lng: language })
+      : i18n.t("syncStatus.unavailable", { lng: language });
   }
-  if (total === 0) return i18n.t("syncStatus.noPeers");
-  if (connected > 0) return i18n.t("syncStatus.connected", { connected, total });
-  return i18n.t("syncStatus.disconnected", { total });
+  if (total === 0) return i18n.t("syncStatus.noPeers", { lng: language });
+  if (connected > 0) return i18n.t("syncStatus.connected", { connected, total, lng: language });
+  return i18n.t("syncStatus.disconnected", { total, lng: language });
 }
 
 export function SyncStatusProvider({ children }: { children: React.ReactNode }) {
@@ -54,15 +55,6 @@ export function SyncStatusProvider({ children }: { children: React.ReactNode }) 
   const [entries, setEntries] = useState<SyncStatusEntry[]>([]);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<number | null>(null);
-  const [i18nTick, setI18nTick] = useState(0);
-
-  useEffect(() => {
-    const onLang = () => setI18nTick((n) => n + 1);
-    i18n.on("languageChanged", onLang);
-    return () => {
-      i18n.off("languageChanged", onLang);
-    };
-  }, []);
 
   const load = useCallback(() => {
     getSyncStatus()
@@ -94,13 +86,14 @@ export function SyncStatusProvider({ children }: { children: React.ReactNode }) 
   }, [syncDataVersion, load]);
 
   const derived = useMemo(() => {
+    const language = i18n.resolvedLanguage ?? i18n.language;
     const total = entries.length;
     const connected = entries.filter((e) => e.connected).length;
     const notConfigured = computeNotConfigured(syncError);
     const isConnected = !syncError && total > 0 && connected > 0;
-    const statusText = computeStatusText({ syncError, notConfigured, total, connected });
+    const statusText = computeStatusText({ syncError, notConfigured, total, connected, language });
     return { total, connected, notConfigured, isConnected, statusText };
-  }, [entries, syncError, i18nTick]);
+  }, [entries, syncError]);
 
   const value: SyncStatusState = useMemo(
     () => ({
