@@ -8,6 +8,8 @@ slug: kasse
 
 **When?** You record a **customer receipt** (one receipt with one or more lines).
 
+![Register: line entry](./handbuch/en/assets/kasse.png)
+
 **Steps (short)**
 
 1. Home → **Register**.

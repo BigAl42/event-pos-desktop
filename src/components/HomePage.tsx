@@ -202,7 +202,7 @@ export default function HomePage({
   }
 
   return (
-    <div className="home-page">
+    <div className="home-page" data-testid="home-page-root">
       <header className="home-page-header">
         <h1>{t("home.title")}</h1>
         {role === "master" && (

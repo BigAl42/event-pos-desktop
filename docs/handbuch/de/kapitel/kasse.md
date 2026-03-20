@@ -8,6 +8,8 @@ slug: kasse
 
 **Wann brauche ich das?** Du erfasst eine **Kundenabrechnung** (ein Beleg mit einer oder mehreren Positionen).
 
+![Kasse: Positionserfassung](./handbuch/de/assets/kasse.png)
+
 **Schritte (kurz)**
 
 1. Startseite → **Kasse**.

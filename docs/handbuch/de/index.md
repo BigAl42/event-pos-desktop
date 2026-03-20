@@ -21,6 +21,8 @@ Willkommen in der Bedienungsanleitung. Dieses Handbuch gehört zur jeweiligen Ap
 
 ## Handbuch in der App
 
+![Handbuch-Ansicht in der App](./handbuch/de/assets/handbuch-ansicht.png)
+
 - **Einstiege**: Kachel **Handbuch** auf der Startseite, Link in den **Einstellungen**, **Hilfe** in der **Statuszeile** (Fußleiste).
 - **PDF**: Oben in der Handbuch-Ansicht **Aktuelles Kapitel als PDF** oder **Gesamtes Handbuch als PDF**.
 

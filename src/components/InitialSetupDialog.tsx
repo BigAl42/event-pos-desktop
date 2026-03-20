@@ -53,10 +53,10 @@ export default function InitialSetupDialog({ onDone }: Props) {
           <h1>Kassensystem einrichten</h1>
           <p>Als was möchten Sie diese Kasse einrichten?</p>
           <div className="initial-setup-buttons">
-            <button type="button" onClick={() => setStep("master")}>
+            <button type="button" data-testid="initial-setup-master-btn" onClick={() => setStep("master")}>
               Als Hauptkasse
             </button>
-            <button type="button" onClick={() => setStep("slave")}>
+            <button type="button" data-testid="initial-setup-slave-btn" onClick={() => setStep("slave")}>
               Netz beitreten (Nebenkasse)
             </button>
           </div>
@@ -76,6 +76,7 @@ export default function InitialSetupDialog({ onDone }: Props) {
             Kassenname (z. B. Stand 1)
             <input
               type="text"
+              data-testid="initial-setup-kasse-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Stand 1"
@@ -107,6 +108,7 @@ export default function InitialSetupDialog({ onDone }: Props) {
           </button>
           <button
             type="button"
+            data-testid="initial-setup-submit"
             onClick={isMaster ? handleMaster : handleSlave}
             disabled={loading}
           >

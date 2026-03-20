@@ -38,15 +38,17 @@ function AccordionSection({
   title,
   subtitle,
   defaultOpen,
+  testId,
   children,
 }: {
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
+  testId?: string;
   children: React.ReactNode;
 }) {
   return (
-    <details className="settings-accordion" open={defaultOpen}>
+    <details className="settings-accordion" open={defaultOpen} data-testid={testId}>
       <summary className="settings-accordion-summary">
         <div className="settings-accordion-summary-text">
           <span className="settings-accordion-title">{title}</span>
@@ -388,7 +390,7 @@ export default function SettingsView({ onBack, onOpenHandbook }: Props) {
   return (
     <div className="settings-view">
       <header className="settings-header">
-        <button type="button" onClick={onBack}>
+        <button type="button" data-testid="settings-back-btn" onClick={onBack}>
           ← Zurück
         </button>
         <div className="settings-header-title">
@@ -908,7 +910,11 @@ export default function SettingsView({ onBack, onOpenHandbook }: Props) {
       )}
 
       {(role === "master" || role === "slave") && (
-        <AccordionSection title="Abrechnungsläufe" subtitle="Läufe verwalten / neuen Lauf starten">
+        <AccordionSection
+          title="Abrechnungsläufe"
+          subtitle="Läufe verwalten / neuen Lauf starten"
+          testId="settings-section-abrechnungslaeufe"
+        >
           <section className="settings-section">
             {laufLoading && <p>Abrechnungsläufe werden geladen…</p>}
             {laufError && <p className="settings-error">{laufError}</p>}
@@ -963,6 +969,7 @@ export default function SettingsView({ onBack, onOpenHandbook }: Props) {
               Name des neuen Abrechnungslaufs
               <input
                 type="text"
+                data-testid="settings-new-lauf-name-input"
                 value={newLaufName}
                 onChange={(e) => setNewLaufName(e.target.value)}
                 placeholder="z.B. Stadtfest 2026"
@@ -972,6 +979,7 @@ export default function SettingsView({ onBack, onOpenHandbook }: Props) {
               <button
                 type="button"
                 className="settings-reset"
+                data-testid="settings-new-lauf-start-btn"
                 onClick={() => setResetConfirm(true)}
                 disabled={!newLaufName.trim()}
               >
@@ -993,6 +1001,7 @@ export default function SettingsView({ onBack, onOpenHandbook }: Props) {
                   <button
                     type="button"
                     className="settings-primary"
+                    data-testid="settings-new-lauf-confirm-btn"
                     onClick={async () => {
                       setResetLoading(true);
                       setResetMessage(null);

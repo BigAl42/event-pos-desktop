@@ -133,7 +133,7 @@ export default function HandbookView({ onBack, initialSlug }: Props) {
   }, [fullPdfEntries]);
 
   return (
-    <div className="handbook-view">
+    <div className="handbook-view" data-testid="handbook-view-root">
       <header className="handbook-header">
         <button type="button" className="handbook-back" onClick={onBack}>
           ← Zurück

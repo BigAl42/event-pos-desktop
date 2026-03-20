@@ -5,7 +5,16 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 
 export default [
-  { ignores: ["dist/", "node_modules/", "src-tauri/target/", "**/*.config.js"] },
+  {
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "e2e-handbook-screenshots/",
+      "src-tauri/target/",
+      "**/*.config.js",
+      "scripts/render-handbuch-placeholders.mjs",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

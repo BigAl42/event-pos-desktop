@@ -21,6 +21,8 @@ Welcome to the user guide. This handbook ships with the app version and is avail
 
 ## Handbook in the app
 
+![Handbook view in the app](./handbuch/en/assets/handbuch-ansicht.png)
+
 - **Entry**: **Handbook** tile on the home screen, link in **Settings**, **Help** in the **status bar** (footer).
 - **PDF**: In the handbook view use **Current chapter as PDF** or **Full handbook as PDF**.
 

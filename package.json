@@ -4,8 +4,13 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
+  "workspaces": [
+    "e2e-handbook-screenshots"
+  ],
   "scripts": {
     "prepare": "husky || true",
+    "predev": "node scripts/sync-handbook-assets.mjs",
+    "prebuild": "node scripts/sync-handbook-assets.mjs",
     "dev": "vite",
     "dev:slave": "vite --port 1421",
     "build": "tsc -b && vite build",
@@ -16,7 +21,9 @@
     "test:rust:docker": "bash scripts/docker-rust-test.sh",
     "tauri": "tauri",
     "tauri:master": "cross-env KASSEN_INSTANCE=master npm run tauri dev",
-    "tauri:slave": "cross-env KASSEN_INSTANCE=slave npm run tauri dev -- --config src-tauri/tauri.slave.json"
+    "tauri:slave": "cross-env KASSEN_INSTANCE=slave npm run tauri dev -- --config src-tauri/tauri.slave.json",
+    "handbook:screenshots": "npm --prefix e2e-handbook-screenshots run capture",
+    "handbook:placeholders": "node scripts/render-handbuch-placeholders.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -50,6 +57,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "globals": "^15.12.0",
     "husky": "^9.1.7",
+    "sharp": "^0.33.5",
     "jsdom": "^25.0.1",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.15.0",

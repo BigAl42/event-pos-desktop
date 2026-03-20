@@ -15,7 +15,7 @@
 - **Erststart**: „Als Master einrichten?“ oder „Netz beitreten“; Kassenname + 2 Personen erfassen.
 - **Start** (`view === "start"`): **HomePage** – Tiles u.a. Kasse, Abrechnung, Handbuch, Einstellungen; Sync-Status in **StatusBar** (Footer).
   - **Nebenkasse**: Join-/Verbinden-UI nur bei fehlender Verbindung/Sync-Fehler + **Closeout**-Hinweis (Einstellungen).
-- **Handbuch**: Markdown unter **`docs/handbuch/de/`** und **`docs/handbuch/en/`** (pro Release gebundelt); TOC aus Frontmatter (`title`, `order`, `slug`). Loader: `src/handbook/handbookIndex.ts` (Sprache aus `i18n.language`). View: **`HandbookView`** (lazy). Einstiege: Home-Tile, Einstellungen, StatusBar „Help“. **PDF-Export**: Kapitel/Gesamt via html2pdf.js + Tauri FS.
+- **Handbuch**: Markdown unter **`docs/handbuch/de/`** und **`docs/handbuch/en/`** (pro Release gebundelt); TOC aus Frontmatter (`title`, `order`, `slug`). Loader: `src/handbook/handbookIndex.ts` (Sprache aus `i18n.language`). View: **`HandbookView`** (lazy). Einstiege: Home-Tile, Einstellungen, StatusBar „Help“. **PDF-Export**: Kapitel/Gesamt via html2canvas + jsPDF + Tauri FS (`handbookPdfExport.ts`). **Screenshots**: `docs/handbuch/{de,en}/assets/*.png`; vor Dev/Build kopiert `scripts/sync-handbook-assets.mjs` → `public/handbuch/`; Neuaufnahme: `npm run handbook:screenshots` (Selenium + `tauri-driver`, Linux/Windows; macOS Desktop nicht unterstützt) oder GitHub Actions **Handbook screenshots** (`workflow_dispatch`, committet PNGs bzw. Artefakt). **Platzhalter neu zeichnen:** `npm run handbook:placeholders` (SVG→PNG via `sharp`, lesbarer Text auf dunklem Grund).
 - **Kasse**:
   - Kundenabrechnung mit 1–n Positionen: Händlernummer, Betrag, optional Bezeichnung.
   - Besetzung (Person 1/2) anzeigen/ändern.
@@ -45,7 +45,7 @@
 - **Datenbank**: SQLite im App-Datenverzeichnis; Migration: `src-tauri/migrations/001_initial.sql`.
 - **Backend-API**: Tauri-Commands (u.a. in `src-tauri/src/commands.rs`); Frontend nutzt `invoke` über **`src/tauriInvoke.ts`** + `db.ts` für typisierte Aufrufe.
 - **PDF-Abrechnung**: Daten aus `get_haendler_abrechnung_pdf_data`, Rendering als druckoptimiertes HTML (`src/components/MerchantSettlementPdf.tsx`), Export via `src/utils/pdfExport.ts` (html2canvas + jsPDF).
-- **Handbuch**: `src/handbook/handbookIndex.ts` (Glob je Sprache unter `docs/handbuch/{de,en}/**/*.md`); `HandbookView.tsx` + `src/utils/handbookPdfExport.ts` (html2pdf.js für Multi-Page).
+- **Handbuch**: `src/handbook/handbookIndex.ts` (Glob je Sprache unter `docs/handbuch/{de,en}/**/*.md`); `HandbookView.tsx` + `src/utils/handbookPdfExport.ts` (html2canvas + jsPDF für Multi-Page). Bilder im Markdown: `./handbuch/{de|en}/assets/…` (Quelle `docs/…`, Sync nach `public/`).
 - **Sync-Protokoll**: `src-tauri/src/sync/*` (WebSocket, `Message`-enum in `src-tauri/src/sync/protocol.rs`).
 
 ## Frontend: Views (Auswahl, englische `view`-Keys in `App.tsx`)

@@ -12,6 +12,8 @@ The system is **offline-capable** and supports multiple registers (**main** and 
 
 ## Navigation
 
+![Home screen with tiles (main register)](./handbuch/en/assets/startseite.png)
+
 - **Home**: tiles depend on role (e.g. register, settlement, void, sync status, handbook, settings, merchants, join requests).
 - **Status bar** (bottom): role, sync text, current billing cycle, pending join requests, **Help** (opens the handbook).
 

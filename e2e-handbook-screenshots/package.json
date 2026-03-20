@@ -1,0 +1,12 @@
+{
+  "name": "e2e-handbook-screenshots",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "capture": "node capture.mjs"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.27.1"
+  }
+}

@@ -10,6 +10,8 @@ slug: einstellungen
 
 Settings are grouped in **collapsible sections** (accordions).
 
+![Settings (excerpt)](./handbuch/en/assets/einstellungen.png)
+
 ## This register
 
 - **Name** and **role** (main / satellite) – read-only.

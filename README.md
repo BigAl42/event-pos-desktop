@@ -2,6 +2,16 @@
 
 Offline-fähiges Kassensystem mit mehreren Kassenplätzen (Master/Slave), Händlerabrechnung, Abrechnungsläufen und P2P-Sync.
 
+| Startseite (Hauptkasse) | Kasse |
+| :---: | :---: |
+| ![Startseite](docs/handbuch/de/assets/startseite.png) | ![Kasse](docs/handbuch/de/assets/kasse.png) |
+
+Weitere Abbildungen: `docs/handbuch/de/assets/` bzw. `docs/handbuch/en/assets/` (eingebunden im [Handbuch](docs/handbuch/de/index.md)). Vor `npm run dev` / `npm run build` kopiert [`scripts/sync-handbook-assets.mjs`](scripts/sync-handbook-assets.mjs) diese Dateien nach `public/handbuch/…`, damit die App sie unter `./handbuch/…` ausliefert.
+
+**Sichtbare Platzhalter-Grafiken (ohne WebDriver, z. B. macOS):** `npm run handbook:placeholders` erzeugt kontrastreiche PNGs mit Kurztext in `docs/handbuch/{de,en}/assets/` (danach bei Bedarf `node scripts/sync-handbook-assets.mjs` oder einfach `npm run dev` / `npm run build`).
+
+**Screenshots neu erfassen (automatisiert):** `cargo install tauri-driver --locked`; Linux: WebKitWebDriver (z. B. Paket `webkit2gtk-driver`); Windows: [Microsoft Edge WebDriver](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/) passend zur Edge-Version. Dann im Projektroot `npm install` (inkl. `e2e-handbook-screenshots`) und `npm run handbook:screenshots`. **macOS (Desktop):** Tauri WebDriver bietet keinen WKWebView-Treiber – das Skript beendet sich dort mit einem Hinweis; stattdessen Platzhalter wie oben oder **GitHub Actions**: Workflow [`.github/workflows/handbook-screenshots.yml`](.github/workflows/handbook-screenshots.yml) per *Run workflow* starten (Ubuntu, Xvfb) – die PNGs werden committet; bei Branch-Protection ggf. Artefakt `handbook-screenshots` laden und manuell einspielen.
+
 ## Disclaimer (KI-unterstützte Entwicklung)
 
 Teile dieses Quellcodes wurden mit Hilfe von **KI-gestützten Programmierwerkzeugen** (z. B. Code-Assistenten, automatische Vorschläge, Refactorings) erstellt, überarbeitet oder ergänzt. Es gibt **keine Garantie** für Vollständigkeit, Fehlerfreiheit, Sicherheit oder Eignung für einen bestimmten Zweck – insbesondere nicht für den Einsatz in regulierten oder sicherheitskritischen Umgebungen ohne eigene Prüfung. **Verantwortung für Prüfung, Betrieb und Compliance** liegt bei den Nutzerinnen und Nutzern bzw. den Betreibenden des Systems.
@@ -129,4 +139,4 @@ docker run --rm -t -v "${PWD}:/workspace" -w /workspace/src-tauri kassensystem-r
 
 - DB: SQLite im App-Datenverzeichnis; Migrationen unter `src-tauri/migrations/`.
 - Sync/Backend: Rust Commands unter `src-tauri/src/commands.rs`, Sync-Protokoll unter `src-tauri/src/sync/`.
-- Handbuch: Markdown unter `docs/handbuch/de/` und `docs/handbuch/en/` (TOC aus Frontmatter: `title`, `order`, `slug`), gebündelt über `src/handbook/handbookIndex.ts`, Anzeige in `src/components/HandbookView.tsx`.
+- Handbuch: Markdown unter `docs/handbuch/de/` und `docs/handbuch/en/` (TOC aus Frontmatter: `title`, `order`, `slug`), gebündelt über `src/handbook/handbookIndex.ts`, Anzeige in `src/components/HandbookView.tsx`; Screenshots unter `docs/handbuch/{de,en}/assets/` → Sync nach `public/handbuch/` (siehe oben); Platzhalter: `npm run handbook:placeholders`; echte UI: `npm run handbook:screenshots`.

@@ -205,6 +205,15 @@
   margin: 0 0 0.75rem;
 }
 
+.handbook-markdown img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.75rem 0;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
 .handbook-markdown ul,
 .handbook-markdown ol {
   margin: 0 0 0.75rem;

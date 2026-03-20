@@ -1,0 +1,86 @@
+# Erzeugt echte App-Screenshots (Tauri + tauri-driver + WebKitWebDriver) auf Ubuntu unter Xvfb
+# und committet die PNGs nach docs/handbuch/{de,en}/assets/.
+#
+# Auslösen: Actions → „Handbook screenshots“ → Run workflow (Branch: main).
+# Hinweis: Bei Branch-Protection auf main kann der Push fehlen – dann Artefakt „handbook-screenshots“ laden und manuell committen.
+name: Handbook screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: handbook-screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture and commit PNGs
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux dependencies (Tauri + WebDriver)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            webkit2gtk-driver \
+            xvfb
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --locked
+
+      - name: Capture screenshots (WebDriver + Xvfb)
+        run: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run handbook:screenshots
+
+      - name: Upload PNG artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: handbook-screenshots
+          path: |
+            docs/handbuch/de/assets/*.png
+            docs/handbuch/en/assets/*.png
+
+      - name: Commit and push updated screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/handbuch/de/assets/*.png docs/handbuch/en/assets/*.png
+          if git diff --staged --quiet; then
+            echo "No PNG changes to commit."
+          else
+            git commit -m "chore(handbook): regenerate screenshots via CI WebDriver"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

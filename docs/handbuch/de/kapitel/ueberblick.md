@@ -12,6 +12,8 @@ Das Kassensystem ist **offline-fähig** und unterstützt mehrere Kassenplätze (
 
 ## Navigation in der App
 
+![Startseite mit Kacheln (Hauptkasse)](./handbuch/de/assets/startseite.png)
+
 - **Startseite**: Kacheln je nach Rolle (z. B. Kasse, Abrechnung, Storno, Sync-Status, Handbuch, Einstellungen, Händler, Join-Anfragen).
 - **Statuszeile** (unten): Rolle, Sync-Text, aktueller Abrechnungslauf, ggf. ausstehende Join-Anfragen, **Hilfe** (öffnet das Handbuch).
 

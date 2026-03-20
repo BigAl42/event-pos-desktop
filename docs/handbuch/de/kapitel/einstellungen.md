@@ -10,6 +10,8 @@ slug: einstellungen
 
 Die Einstellungen sind in **einklappbaren Bereichen** (Akkordeon) gegliedert.
 
+![Einstellungen (Ausschnitt)](./handbuch/de/assets/einstellungen.png)
+
 ## Diese Kasse
 
 - **Name** und **Rolle** (Hauptkasse / Nebenkasse) – nur Anzeige.

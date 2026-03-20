@@ -262,7 +262,7 @@ export default function CashRegisterView({ onBack }: Props) {
   }
 
   return (
-    <div className="cash-register-view">
+    <div className="cash-register-view" data-testid="cash-register-view">
       <header className="cash-register-header">
         <button type="button" onClick={onBack}>
           {t("cashRegister.back")}
