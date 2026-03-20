@@ -2,6 +2,14 @@
 
 Offline-fähiges Kassensystem mit mehreren Kassenplätzen (Master/Slave), Händlerabrechnung, Abrechnungsläufen und P2P-Sync.
 
+## Disclaimer (KI-unterstützte Entwicklung)
+
+Teile dieses Quellcodes wurden mit Hilfe von **KI-gestützten Programmierwerkzeugen** (z. B. Code-Assistenten, automatische Vorschläge, Refactorings) erstellt, überarbeitet oder ergänzt. Es gibt **keine Garantie** für Vollständigkeit, Fehlerfreiheit, Sicherheit oder Eignung für einen bestimmten Zweck – insbesondere nicht für den Einsatz in regulierten oder sicherheitskritischen Umgebungen ohne eigene Prüfung. **Verantwortung für Prüfung, Betrieb und Compliance** liegt bei den Nutzerinnen und Nutzern bzw. den Betreibenden des Systems.
+
+## Lizenz
+
+Dieses Projekt steht unter der **MIT License** – siehe Datei [`LICENSE`](LICENSE). Die MIT-Lizenz ist permissiv: Nutzung, Änderung und Weitergabe sind mit wenigen Bedingungen möglich (u. a. Kopie des Lizenztextes beibehalten).
+
 ## Voraussetzungen
 
 - **Node.js** (z. B. 20.x)
