@@ -3,6 +3,7 @@ pub mod db;
 mod discovery;
 mod tls;
 pub mod sync;
+pub mod user_error;
 
 /// Einmalige Erzeugung des Tauri-Kontexts (vermeidet doppelte Symbol-Definition in Tests).
 fn tauri_context() -> tauri::Context<tauri::Wry> {

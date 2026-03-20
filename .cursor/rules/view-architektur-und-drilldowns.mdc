@@ -22,7 +22,7 @@ alwaysApply: true
   - Detail-/Drilldown-Ansichten werden als **eigene View** im globalen View-State (z.B. `view === "entity_drilldown"`) oder in einem separaten Fenster gerendert – nicht als zusätzliches Overlay unterhalb einer bestehenden Seite.
   - In der zentralen App-Komponente (z.B. `App.tsx`):
     - Steuert der globale `view`-State, welche Hauptansicht sichtbar ist (inkl. Drilldowns/Fenster).
-    - Werden globale Layout-Bestandteile (z.B. Statuszeile) nicht mit Drilldown-spezifischen Inhalten vermischt.
+    - Werden globale Layout-Bestandteile (z.B. `StatusBar`) nicht mit Drilldown-spezifischen Inhalten vermischt.
 
 - **Neue Views vollständig „verkabeln“**
   - Beim Einführen oder Ändern von Views/Komponenten in der zentralen App-Komponente ist sicherzustellen, dass:

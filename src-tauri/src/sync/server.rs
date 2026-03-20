@@ -1,6 +1,7 @@
 //! WebSocket-Server (Phase 2: Join, Phase 3: Sync)
 
 use crate::db;
+use crate::user_error::user_msg;
 use crate::sync::protocol::{
     AbrechnungslaufReset, Ack, CloseoutApprove, CloseoutReject, CloseoutRequest, HaendlerListUpdate,
     JoinReject, LeaveNetworkAck, LeaveNetworkRequest, Message, RequestSlaveReset, SyncState,
@@ -151,7 +152,7 @@ async fn handle_connection(
                 .send(WsMessage::Text(
                     Message::Error(crate::sync::protocol::ErrorMsg {
                         code: "invalid_message".into(),
-                        message: "Erwarte join_request".into(),
+                        message: user_msg("errors.sync.expect_join_request"),
                     })
                     .to_json()
                     .unwrap_or_default(),
@@ -194,7 +195,7 @@ async fn handle_connection(
             .send(WsMessage::Text(
                 Message::Error(crate::sync::protocol::ErrorMsg {
                     code: "forbidden".into(),
-                    message: "Join nur auf Hauptkasse.".into(),
+                    message: user_msg("errors.sync.join_master_only"),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -216,7 +217,7 @@ async fn handle_connection(
                 .send(WsMessage::Text(
                     Message::Error(crate::sync::protocol::ErrorMsg {
                         code: "invalid_message".into(),
-                        message: "Erste Nachricht muss join_request oder sync_state sein.".into(),
+                        message: user_msg("errors.sync.first_message_invalid"),
                     })
                     .to_json()
                     .unwrap_or_default(),
@@ -244,7 +245,7 @@ async fn handle_connection(
         let _ = write
             .send(WsMessage::Text(
                 Message::JoinReject(JoinReject {
-                    reason: Some("Ungültiger Join-Token".into()),
+                    reason: Some(user_msg("errors.sync.join_invalid_token")),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -273,7 +274,7 @@ async fn handle_connection(
         .send(WsMessage::Text(
             Message::Error(crate::sync::protocol::ErrorMsg {
                 code: "pending".into(),
-                message: "Anfrage gespeichert. Warte auf Freigabe durch Master.".into(),
+                message: user_msg("errors.sync.join_pending_approval"),
             })
             .to_json()
             .unwrap_or_default(),
@@ -306,7 +307,7 @@ async fn handle_leave_network_request(
             .send(WsMessage::Text(
                 Message::Error(crate::sync::protocol::ErrorMsg {
                     code: "forbidden".into(),
-                    message: "Leave-Network nur an Hauptkasse.".into(),
+                    message: user_msg("errors.sync.leave_master_only"),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -317,13 +318,13 @@ async fn handle_leave_network_request(
 
     let my_kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
     if req.kassen_id == my_kassen_id {
         let _ = write
             .send(WsMessage::Text(
                 Message::Error(crate::sync::protocol::ErrorMsg {
                     code: "invalid".into(),
-                    message: "Eigene Kasse kann nicht entfernt werden.".into(),
+                    message: user_msg("errors.peer.cannot_remove_self"),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -375,7 +376,7 @@ async fn handle_closeout_request(
             .send(WsMessage::Text(
                 Message::CloseoutReject(CloseoutReject {
                     code: "forbidden".into(),
-                    message: "Closeout-Anfrage nur an Hauptkasse.".into(),
+                    message: user_msg("errors.sync.closeout_master_only"),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -399,7 +400,7 @@ async fn handle_closeout_request(
             .send(WsMessage::Text(
                 Message::CloseoutReject(CloseoutReject {
                     code: "sync_pending".into(),
-                    message: "Noch nicht alle Buchungen dieser Nebenkasse auf der Hauptkasse. Bitte Sync abwarten.".into(),
+                    message: user_msg("errors.sync.closeout_receipts_pending"),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -425,9 +426,7 @@ async fn handle_closeout_request(
                 .send(WsMessage::Text(
                     Message::CloseoutReject(CloseoutReject {
                         code: "storno_sync_pending".into(),
-                        message:
-                            "Noch nicht alle Stornos dieser Nebenkasse auf der Hauptkasse. Bitte Sync abwarten."
-                                .into(),
+                        message: user_msg("errors.sync.closeout_voids_pending"),
                     })
                     .to_json()
                     .unwrap_or_default(),
@@ -483,7 +482,7 @@ async fn handle_request_slave_reset(
             .send(WsMessage::Text(
                 Message::Error(crate::sync::protocol::ErrorMsg {
                     code: "forbidden".into(),
-                    message: "Reset-Anfrage nur an Hauptkasse.".into(),
+                    message: user_msg("errors.sync.reset_master_only"),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -507,7 +506,7 @@ async fn handle_request_slave_reset(
             .send(WsMessage::Text(
                 Message::Error(crate::sync::protocol::ErrorMsg {
                     code: "sync_pending".into(),
-                    message: "Noch nicht alle Daten der Nebenkasse auf der Hauptkasse. Bitte Sync abwarten.".into(),
+                    message: user_msg("errors.sync.reset_slave_data_pending"),
                 })
                 .to_json()
                 .unwrap_or_default(),
@@ -532,7 +531,7 @@ async fn handle_request_slave_reset(
                     .send(WsMessage::Text(
                         Message::Error(crate::sync::protocol::ErrorMsg {
                             code: "sync_peers_pending".into(),
-                            message: "Nicht alle verbundenen Kassen haben alle Buchungen dieser Nebenkasse übernommen. Bitte Sync abwarten und erneut versuchen.".into(),
+                            message: user_msg("errors.sync.reset_peers_pending"),
                         })
                         .to_json()
                         .unwrap_or_default(),
@@ -549,7 +548,7 @@ async fn handle_request_slave_reset(
             [],
             |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
-        .map_err(|_| "Kein aktiver Abrechnungslauf auf der Hauptkasse.")?;
+        .map_err(|_| user_msg("errors.billing_cycle.master_has_no_active"))?;
 
     let _ = write
         .send(WsMessage::Text(
@@ -783,7 +782,7 @@ pub async fn broadcast_haendler_list(
 ) -> Result<(), String> {
     let state = app
         .try_state::<SyncConnectionsState>()
-        .ok_or("SyncConnectionsState nicht verfügbar")?;
+        .ok_or_else(|| user_msg("errors.internal.sync_connections_unavailable"))?;
     let msg = Message::HaendlerListUpdate(HaendlerListUpdate {
         haendler: haendler.clone(),
     });

@@ -2,6 +2,7 @@
 
 use crate::db;
 use crate::discovery;
+use crate::user_error::{user_msg, UserMsg};
 use crate::sync::client;
 use crate::sync::protocol::{HaendlerInfo, JoinApprove, Message, PeerInfo};
 use crate::sync::server::{self, SyncConnectionsState};
@@ -12,7 +13,6 @@ use rand::Rng;
 use rusqlite::OptionalExtension;
 use std::fs;
 use std::sync::Mutex;
-use std::io::Write;
 use tauri::command;
 use tauri::Emitter;
 use tauri::Manager;
@@ -148,10 +148,7 @@ fn get_aktiver_abrechnungslauf_id(conn: &rusqlite::Connection) -> Result<String,
             .optional()
             .map_err(|e| e.to_string())?;
         if role.as_deref() != Some("master") {
-            return Err(
-                "Kein aktiver Abrechnungslauf vorhanden. Diese Nebenkasse muss zuerst von der Hauptkasse initialisiert werden."
-                    .to_string(),
-            );
+            return Err(user_msg("errors.billing_cycle.slave_needs_init_from_master"));
         }
 
         let id = uuid::Uuid::new_v4().to_string();
@@ -160,7 +157,7 @@ fn get_aktiver_abrechnungslauf_id(conn: &rusqlite::Connection) -> Result<String,
             .to_string();
         conn.execute(
             "INSERT INTO abrechnungslauf (id, name, start_zeitpunkt, end_zeitpunkt, is_aktiv) VALUES (?1, ?2, ?3, NULL, 1)",
-            rusqlite::params![&id, "Neuer Lauf", &now],
+            rusqlite::params![&id, "New billing cycle", &now],
         )
         .map_err(|e| e.to_string())?;
         Ok(id)
@@ -187,7 +184,7 @@ pub fn get_notfall_export_data(
             rusqlite::params![&abrechnungslauf_id],
             |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
         )
-        .map_err(|_| "Abrechnungslauf nicht gefunden.".to_string())?;
+        .map_err(|_| user_msg("errors.billing_cycle.not_found"))?;
 
     let export_at = chrono::Utc::now()
         .format("%Y-%m-%dT%H:%M:%S%.fZ")
@@ -321,10 +318,7 @@ pub fn import_notfall_data(
     allow_mismatch: bool,
 ) -> Result<NotfallImportSummary, String> {
     if !allow_mismatch && payload.meta.exported_lauf_id != target_abrechnungslauf_id {
-        return Err(
-            "Abrechnungslauf stimmt nicht überein (Export-Lauf != Ziel-Lauf). Import abgebrochen."
-                .to_string(),
-        );
+        return Err(user_msg("errors.notfall_import.billing_cycle_mismatch"));
     }
 
     let path = db::db_path(&app)?;
@@ -339,7 +333,7 @@ pub fn import_notfall_data(
         )
         .map_err(|e| e.to_string())?;
     if exists == 0 {
-        return Err("Ziel-Abrechnungslauf nicht gefunden.".to_string());
+        return Err(user_msg("errors.notfall_import.target_billing_cycle_not_found"));
     }
 
     let tx = conn.transaction().map_err(|e| e.to_string())?;
@@ -506,7 +500,7 @@ pub async fn start_master_server(app: tauri::AppHandle, port: u16) -> Result<(),
     // mDNS: Hauptkasse im LAN ankündigen, damit Nebenkassen sie finden
     let instance_name = db::get_config(&app, "kassenname")
         .map_err(|e| e.to_string())?
-        .unwrap_or_else(|| "Kassensystem Hauptkasse".to_string());
+        .unwrap_or_else(|| "Main register".to_string());
     let mdns = ServiceDaemon::new().map_err(|e| e.to_string())?;
     discovery::register_master(&mdns, port, &instance_name)?;
     app.state::<MdnsDaemonState>()
@@ -578,7 +572,7 @@ pub fn approve_join_request(
             rusqlite::params![&kassen_id],
             |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
-        .map_err(|_| "Join-Anfrage nicht gefunden oder bereits bearbeitet")?;
+        .map_err(|_| user_msg("errors.join_request.not_found_or_handled"))?;
 
     let ws_url = my_ws_url.unwrap_or_default();
 
@@ -605,7 +599,7 @@ pub fn approve_join_request(
     drop(identity);
     let master_kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
 
     // Peer-Liste: alle Kassen inkl. Master mit ws_url
     let mut peer_stmt = conn
@@ -889,16 +883,16 @@ pub fn delete_haendler(app: tauri::AppHandle, haendlernummer: String) -> Result<
 pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String, String> {
     let master_url = db::get_config(&app, "master_ws_url")
         .map_err(|e| e.to_string())?
-        .ok_or("Hauptkassen-URL nicht konfiguriert (Einstellungen)")?;
+        .ok_or_else(|| user_msg("errors.config.master_ws_url_missing"))?;
     let kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
     let name = db::get_config(&app, "kassenname")
         .map_err(|e| e.to_string())?
-        .unwrap_or_else(|| "Kasse".to_string());
+        .unwrap_or_else(|| "Register".to_string());
     let my_ws_url = db::get_config(&app, "my_ws_url")
         .map_err(|e| e.to_string())?
-        .ok_or("Eigene Sync-URL nicht konfiguriert (Einstellungen)")?;
+        .ok_or_else(|| user_msg("errors.config.my_sync_url_missing"))?;
 
     let (_identity, my_fp) = crate::tls::ensure_identity_and_fingerprint(&app)?;
 
@@ -916,10 +910,10 @@ pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String
         .query_row([], |row| row.get(0))
         .map_err(|e| e.to_string())?;
     if existing_count > 0 {
-        let master_lauf_id = approve.active_abrechnungslauf_id.clone().ok_or_else(|| {
-            "Join nicht möglich: Hauptkasse hat keinen aktiven Abrechnungslauf übertragen."
-                .to_string()
-        })?;
+        let master_lauf_id = approve
+            .active_abrechnungslauf_id
+            .clone()
+            .ok_or_else(|| user_msg("errors.join.master_has_no_active_billing_cycle"))?;
 
         let local_lauf_id_opt: Option<String> = conn
             .query_row(
@@ -931,16 +925,15 @@ pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String
 
         if let Some(local_lauf_id) = local_lauf_id_opt {
             if local_lauf_id != master_lauf_id {
-                return Err(format!(
-                    "Join nicht möglich: Nebenkasse hat bereits lokale Buchungen im Abrechnungslauf {} (lokal aktiv), die Hauptkasse ist im Abrechnungslauf {}. Bitte Abrechnungsläufe angleichen (z.B. Reset) und erneut versuchen.",
-                    local_lauf_id, master_lauf_id
-                ));
+                return Err(
+                    UserMsg::new("errors.join.local_bookings_billing_cycle_mismatch")
+                        .with_param("localBillingCycleId", local_lauf_id)
+                        .with_param("masterBillingCycleId", master_lauf_id)
+                        .to_json(),
+                );
             }
         } else {
-            return Err(
-                "Join nicht möglich: Nebenkasse hat bereits lokale Buchungen, aber keinen aktiven Abrechnungslauf. Bitte Abrechnungslauf prüfen/angleichen (z.B. Reset) und erneut versuchen."
-                    .to_string(),
-            );
+            return Err(user_msg("errors.join.local_bookings_no_active_cycle"));
         }
     }
 
@@ -949,7 +942,7 @@ pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String
         let lauf_name = approve
             .active_abrechnungslauf_name
             .clone()
-            .unwrap_or_else(|| "Master-Abrechnungslauf".to_string());
+            .unwrap_or_else(|| "Master billing cycle".to_string());
         let lauf_start = approve
             .active_abrechnungslauf_start
             .clone()
@@ -1017,7 +1010,7 @@ pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String
     }
 
     let _ = app.emit("sync-data-changed", ());
-    Ok("Netz beigetreten. Peer-, Händler- und Abrechnungslaufdaten übernommen.".to_string())
+    Ok(user_msg("success.join.network_complete"))
 }
 
 /// Nebenkasse: Fordert bei der Hauptkasse einen Reset des lokalen Abrechnungslaufs an.
@@ -1026,10 +1019,10 @@ pub async fn join_network(app: tauri::AppHandle, token: String) -> Result<String
 pub async fn request_slave_reset(app: tauri::AppHandle) -> Result<String, String> {
     let master_url = db::get_config(&app, "master_ws_url")
         .map_err(|e| e.to_string())?
-        .ok_or("Hauptkassen-URL nicht konfiguriert (Einstellungen)")?;
+        .ok_or_else(|| user_msg("errors.config.master_ws_url_missing"))?;
     let kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
 
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
@@ -1044,7 +1037,7 @@ pub async fn request_slave_reset(app: tauri::AppHandle) -> Result<String, String
     let reset = client::send_slave_reset_request(&master_url, &kassen_id, max_sequence).await?;
     sync_db::apply_abrechnungslauf_reset(&app, &reset).map_err(|e| e.to_string())?;
     let _ = app.emit("sync-data-changed", ());
-    Ok("Lokaler Abrechnungslauf wurde geleert und mit dem Abrechnungslauf der Hauptkasse abgeglichen.".to_string())
+    Ok(user_msg("success.slave_reset.complete"))
 }
 
 /// Nebenkasse: Fordert bei der Hauptkasse eine Closeout-Bestätigung an („Abmelden/Lauf fertig“).
@@ -1053,10 +1046,10 @@ pub async fn request_slave_reset(app: tauri::AppHandle) -> Result<String, String
 pub async fn request_closeout(app: tauri::AppHandle) -> Result<String, String> {
     let master_url = db::get_config(&app, "master_ws_url")
         .map_err(|e| e.to_string())?
-        .ok_or("Hauptkassen-URL nicht konfiguriert (Einstellungen)")?;
+        .ok_or_else(|| user_msg("errors.config.master_ws_url_missing"))?;
     let kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
 
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
@@ -1089,7 +1082,7 @@ pub async fn request_closeout(app: tauri::AppHandle) -> Result<String, String> {
         .to_string();
     db::set_config(&app, "closeout_ok_at", &now).map_err(|e| e.to_string())?;
 
-    Ok("Closeout bestätigt: Hauptkasse hat alle Daten dieser Kasse. Abmelden ist möglich.".to_string())
+    Ok(user_msg("success.closeout.confirmed"))
 }
 
 /// Nebenkasse: Entkoppelt diese Kasse lokal vom Netzwerk (vergisst Master/Peers).
@@ -1100,12 +1093,12 @@ pub fn leave_network(app: tauri::AppHandle) -> Result<String, String> {
         .map_err(|e| e.to_string())?
         .unwrap_or_default();
     if role != "slave" {
-        return Err("Entkoppeln ist nur auf Nebenkassen möglich.".to_string());
+        return Err(user_msg("errors.leave.slave_only"));
     }
     let master_url_opt = db::get_config(&app, "master_ws_url").map_err(|e| e.to_string())?;
     let my_kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
 
     // Best-effort: Hauptkasse informieren, damit diese Kasse aus der Peer-Liste verschwindet.
     if let Some(master_url) = master_url_opt.as_deref() {
@@ -1134,7 +1127,7 @@ pub fn leave_network(app: tauri::AppHandle) -> Result<String, String> {
     db::set_config(&app, "closeout_ok_at", "").map_err(|e| e.to_string())?;
 
     let _ = app.emit("sync-data-changed", ());
-    Ok("Nebenkasse wurde lokal entkoppelt (Master/Peers vergessen).".to_string())
+    Ok(user_msg("success.leave.detached"))
 }
 
 // ---------- Phase 4: Storno ----------
@@ -1143,7 +1136,7 @@ pub fn leave_network(app: tauri::AppHandle) -> Result<String, String> {
 pub fn storno_position(app: tauri::AppHandle, buchung_id: String) -> Result<(), String> {
     let kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
     let id = uuid::Uuid::new_v4().to_string();
@@ -1162,7 +1155,7 @@ pub fn storno_position(app: tauri::AppHandle, buchung_id: String) -> Result<(), 
 pub fn storno_abrechnung(app: tauri::AppHandle, kundenabrechnung_id: String) -> Result<(), String> {
     let kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
     let now = chrono::Utc::now()
@@ -1398,7 +1391,7 @@ pub fn get_haendler_abrechnung_pdf_data(
                 email: row.get(8)?,
             })
         })
-        .map_err(|_| "Händler nicht gefunden.".to_string())?;
+        .map_err(|_| user_msg("errors.merchant.not_found"))?;
 
     // Laufdaten
     let mut l_stmt = conn
@@ -1418,7 +1411,7 @@ pub fn get_haendler_abrechnung_pdf_data(
                 end_zeitpunkt: row.get(3)?,
             })
         })
-        .map_err(|_| "Abrechnungslauf nicht gefunden.".to_string())?;
+        .map_err(|_| user_msg("errors.billing_cycle.not_found"))?;
 
     // Aggregate (stornos ausschließen) für Händler innerhalb des Laufes
     let mut a_stmt = conn
@@ -1505,16 +1498,16 @@ fn normalize_ws_url(input: &str) -> String {
 pub async fn start_sync_connections(app: tauri::AppHandle) -> Result<String, String> {
     let my_kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
     let my_ws_url = db::get_config(&app, "my_ws_url")
         .map_err(|e| e.to_string())?
-        .ok_or("Eigene Sync-URL nicht konfiguriert (Einstellungen)")?;
+        .ok_or_else(|| user_msg("errors.config.my_sync_url_missing"))?;
 
     let port = my_ws_url
         .rsplit(':')
         .next()
         .and_then(|s| s.parse::<u16>().ok())
-        .ok_or("Ungültige Sync-URL (Port fehlt, z.B. wss://IP:8766)")?;
+        .ok_or_else(|| user_msg("errors.sync.invalid_url_missing_port"))?;
 
     match server::start_ws_server(app.clone(), port).await {
         Ok(approve_tx) => {
@@ -1663,11 +1656,12 @@ pub async fn start_sync_connections(app: tauri::AppHandle) -> Result<String, Str
         });
     }
 
-    Ok(format!(
-        "Server gestartet, Sync zu {} Peer(s) gestartet. {} Selbstverbindung(en) entfernt.",
-        peer_count
-        ,removed_self_loops
-    ))
+    Ok(
+        UserMsg::new("success.sync.started")
+            .with_param("peerCount", peer_count.to_string())
+            .with_param("removedSelfLoops", removed_self_loops.to_string())
+            .to_json(),
+    )
 }
 
 #[command]
@@ -1740,7 +1734,7 @@ pub fn get_sync_status(
 ) -> Result<Vec<SyncStatusEntry>, String> {
     let my_kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
     let path = db::db_path(&app)?;
     let conn = rusqlite::Connection::open(&path).map_err(|e| e.to_string())?;
     let mut stmt = conn
@@ -1788,32 +1782,17 @@ pub async fn remove_peer_from_network(
     sync_conns: State<'_, SyncConnectionsState>,
     kassen_id: String,
 ) -> Result<(), String> {
-    // #region agent log
-    if let Ok(mut file) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("/Users/lutz/workspace/kassensystem/.cursor/debug-06ad72.log")
-    {
-        let _ = writeln!(
-            file,
-            "{{\"sessionId\":\"06ad72\",\"runId\":\"initial\",\"hypothesisId\":\"H3\",\"location\":\"commands.rs:remove_peer_from_network:entry\",\"message\":\"remove_peer_from_network called\",\"data\":{{\"kassen_id\":\"{}\"}},\"timestamp\":{}}}",
-            kassen_id,
-            chrono::Utc::now().timestamp_millis()
-        );
-    }
-    // #endregion agent log
-
     let role = db::get_config(&app, "role")
         .map_err(|e| e.to_string())?
         .unwrap_or_default();
     if role != "master" {
-        return Err("Nur auf der Hauptkasse möglich.".to_string());
+        return Err(user_msg("errors.peer.master_only"));
     }
     let my_kassen_id = db::get_config(&app, "kassen_id")
         .map_err(|e| e.to_string())?
-        .ok_or("Kassen-ID nicht gesetzt")?;
+        .ok_or_else(|| user_msg("errors.config.register_id_missing"))?;
     if kassen_id == my_kassen_id {
-        return Err("Eigene Kasse kann nicht entfernt werden.".to_string());
+        return Err(user_msg("errors.peer.cannot_remove_self"));
     }
 
     let path = db::db_path(&app)?;
@@ -1827,7 +1806,7 @@ pub async fn remove_peer_from_network(
         )
         .map_err(|e| e.to_string())?;
     if updated == 0 {
-        return Err("Kasse nicht gefunden oder bereits entkoppelt.".to_string());
+        return Err(user_msg("errors.peer.not_found_or_detached"));
     }
     conn.execute("DELETE FROM sync_state WHERE peer_kassen_id = ?1", rusqlite::params![&kassen_id])
         .map_err(|e| e.to_string())?;
@@ -1859,7 +1838,7 @@ pub fn reset_abrechnungslauf(app: tauri::AppHandle) -> Result<String, String> {
     let new_lauf_id = uuid::Uuid::new_v4().to_string();
     conn.execute(
         "INSERT INTO abrechnungslauf (id, name, start_zeitpunkt, end_zeitpunkt, is_aktiv) VALUES (?1, ?2, ?3, NULL, 1)",
-        rusqlite::params![&new_lauf_id, "Neuer Abrechnungslauf", &now],
+        rusqlite::params![&new_lauf_id, "New billing cycle", &now],
     )
     .map_err(|e| e.to_string())?;
 
@@ -1874,7 +1853,7 @@ pub fn reset_abrechnungslauf(app: tauri::AppHandle) -> Result<String, String> {
     conn.execute("DELETE FROM config WHERE key LIKE 'beleg_counter_%'", [])
         .map_err(|e| e.to_string())?;
 
-    Ok("Abrechnungslauf zurückgesetzt. Händlerliste und Kassen unverändert.".to_string())
+    Ok(user_msg("success.billing_cycle.reset"))
 }
 
 // ---------- Abrechnungsläufe verwalten ----------
@@ -1941,10 +1920,11 @@ pub async fn create_abrechnungslauf(
                     continue;
                 }
                 let status = sync_status.get(&peer_id);
-                let peer_state = status
-                    .state
-                    .clone()
-                    .ok_or_else(|| format!("Sync-Stand von {} unbekannt. Bitte Sync abwarten.", peer_id))?;
+                let peer_state = status.state.clone().ok_or_else(|| {
+                    UserMsg::new("errors.sync.peer_state_unknown")
+                        .with_param("peerId", peer_id.clone())
+                        .to_json()
+                })?;
 
                 let peer_reported_seq = peer_state.get(&peer_id).copied().unwrap_or(0);
                 let our_max_seq: i64 = conn
@@ -1955,10 +1935,13 @@ pub async fn create_abrechnungslauf(
                     )
                     .map_err(|e| e.to_string())?;
                 if our_max_seq < peer_reported_seq {
-                    return Err(format!(
-                        "Sync noch nicht vollständig: Belege von {} fehlen auf der Hauptkasse (Master: {}, Peer: {}). Bitte Sync abwarten.",
-                        peer_id, our_max_seq, peer_reported_seq
-                    ));
+                    return Err(
+                        UserMsg::new("errors.sync.incomplete_receipts")
+                            .with_param("peerId", peer_id.clone())
+                            .with_param("masterSeq", our_max_seq.to_string())
+                            .with_param("peerSeq", peer_reported_seq.to_string())
+                            .to_json(),
+                    );
                 }
 
                 let peer_reported_storno_ts = sync_status.get_peer_max_storno_zeitstempel(&peer_id);
@@ -1975,10 +1958,11 @@ pub async fn create_abrechnungslauf(
                         .map(|m| m >= required.as_str())
                         .unwrap_or(false);
                     if !ok {
-                        return Err(format!(
-                            "Sync noch nicht vollständig: Stornos von {} fehlen auf der Hauptkasse. Bitte Sync abwarten.",
-                            peer_id
-                        ));
+                        return Err(
+                            UserMsg::new("errors.sync.incomplete_voids")
+                                .with_param("peerId", peer_id.clone())
+                                .to_json(),
+                        );
                     }
                 }
             }
@@ -2036,10 +2020,10 @@ pub fn delete_abrechnungslauf(app: tauri::AppHandle, id: String) -> Result<Strin
     if let Some(row) = rows.next().map_err(|e| e.to_string())? {
         let is_aktiv: i32 = row.get(0).map_err(|e| e.to_string())?;
         if is_aktiv != 0 {
-            return Err("Aktiver Abrechnungslauf kann nicht gelöscht werden.".to_string());
+            return Err(user_msg("errors.billing_cycle.cannot_delete_active"));
         }
     } else {
-        return Err("Abrechnungslauf nicht gefunden.".to_string());
+        return Err(user_msg("errors.billing_cycle.not_found_for_delete"));
     }
 
     conn.execute(
@@ -2053,7 +2037,7 @@ pub fn delete_abrechnungslauf(app: tauri::AppHandle, id: String) -> Result<Strin
     )
     .map_err(|e| e.to_string())?;
 
-    Ok("Abrechnungslauf gelöscht.".to_string())
+    Ok(user_msg("success.billing_cycle.deleted"))
 }
 
 #[cfg(test)]

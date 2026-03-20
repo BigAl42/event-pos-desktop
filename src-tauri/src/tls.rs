@@ -105,7 +105,7 @@ pub fn ensure_identity_and_fingerprint(app: &AppHandle) -> Result<(native_tls::I
         .map_err(|e| e.to_string())?;
     let cert = parsed
         .cert
-        .ok_or_else(|| "PKCS#12 enthält kein Zertifikat".to_string())?;
+        .ok_or_else(|| crate::user_error::user_msg("errors.tls.pkcs12_no_certificate"))?;
     let cert_der = cert.to_der().map_err(|e| e.to_string())?;
     let fp = sha256_fingerprint_hex(&cert_der);
 

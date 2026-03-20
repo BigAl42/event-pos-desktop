@@ -1,0 +1,474 @@
+.home-page {
+  min-height: 100vh;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.home-page-header {
+  margin-bottom: 2rem;
+}
+
+.home-page-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.home-page-role {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.home-page-role-master {
+  background: #2c5282;
+  color: #fff;
+}
+
+.home-page-role-slave {
+  background: #744210;
+  color: #fff;
+}
+
+.home-page-connection {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.home-page-connection-ok {
+  color: #276749;
+}
+
+.home-page-connection-warn {
+  color: #c53030;
+}
+
+.home-page-kassenliste {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.home-page-kassenliste-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.home-page-kassenliste-leer {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.home-page-kassenliste-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.home-page-kassenliste-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.home-page-kassenliste-item:last-child {
+  border-bottom: none;
+}
+
+.home-page-kassenliste-name {
+  font-weight: 600;
+  min-width: 6rem;
+}
+
+.home-page-kassenliste-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.home-page-kassenliste-badge-ok {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.home-page-kassenliste-badge-warn {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.home-page-kassenliste-time {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.home-page-kassenliste-entkoppeln {
+  margin-left: auto;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid #c53030;
+  border-radius: 6px;
+  background: #fff5f5;
+  color: #c53030;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.home-page-kassenliste-entkoppeln:hover:not(:disabled) {
+  background: #fed7d7;
+}
+
+.home-page-kassenliste-entkoppeln:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  max-width: 600px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 1.25rem;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.1s;
+}
+
+.tile:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tile:active {
+  transform: scale(0.98);
+}
+
+.tile-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tile-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: #2c5282;
+  border-radius: 999px;
+}
+
+.tile-desc {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.tile-kasse { border-left: 4px solid #0a7c42; }
+.tile-abrechnung { border-left: 4px solid #1a5fb4; }
+.tile-storno { border-left: 4px solid #a51d2d; }
+.tile-sync-status { border-left: 4px solid #5e2750; }
+.tile-haendler { border-left: 4px solid #8f5902; }
+.tile-join { border-left: 4px solid #75507b; }
+.tile-handbook { border-left: 4px solid #2e7d32; }
+.tile-einstellungen { border-left: 4px solid #6d5e1f; }
+
+/* Nebenkasse: Mit Hauptkasse verbinden */
+.home-page-join-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.home-page-join-section-connected {
+  border-color: #276749;
+  background: #f0fff4;
+}
+
+.home-page-join-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.home-page-join-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.home-page-join-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.home-page-join-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.home-page-join-item:last-child {
+  border-bottom: none;
+}
+
+.home-page-join-name {
+  font-weight: 600;
+  min-width: 5rem;
+}
+
+.home-page-join-url {
+  color: #64748b;
+  font-size: 0.85rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.home-page-join-btn {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #744210;
+  border-radius: 6px;
+  background: #744210;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.home-page-join-btn:hover {
+  background: #5c350d;
+}
+
+.home-page-join-connected {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: #276749;
+}
+
+.home-page-join-settings-link {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1a5fb4;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.home-page-join-settings-link:hover {
+  color: #0d4a8a;
+}
+
+.home-page-join-disconnect-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #c53030;
+}
+
+/* Nebenkasse: Closeout CTA */
+.home-page-closeout-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fffaf0;
+  border-radius: 8px;
+  border: 1px solid #fbd38d;
+  max-width: 600px;
+}
+
+.home-page-closeout-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.home-page-closeout-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #7b341e;
+}
+
+.home-page-closeout-status {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #744210;
+}
+
+.home-page-closeout-btn {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #744210;
+  border-radius: 6px;
+  background: #744210;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.home-page-closeout-btn:hover {
+  background: #5c350d;
+}
+
+/* Join-Dialog (Modal) */
+.home-page-join-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.home-page-join-dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.home-page-join-dialog-title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.home-page-join-dialog-label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.home-page-join-dialog-label input {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.home-page-join-dialog-ok {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #276749;
+}
+
+.home-page-join-dialog-error {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #c53030;
+}
+
+.home-page-join-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.home-page-join-dialog-actions button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.home-page-join-dialog-submit {
+  background: #744210 !important;
+  color: #fff !important;
+  border-color: #744210 !important;
+}
+
+.home-page-join-dialog-submit:hover:not(:disabled) {
+  background: #5c350d !important;
+}
+
+/* Bestätigungsdialog für Entkoppeln (Master) */
+.home-page-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.home-page-confirm-dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.home-page-confirm-dialog p {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.home-page-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.home-page-confirm-actions button {
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.home-page-confirm-danger {
+  border-color: #c53030;
+  background: #c53030;
+  color: #fff;
+}
+
+.home-page-confirm-danger:hover:not(:disabled) {
+  background: #9b2c2c;
+}

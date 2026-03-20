@@ -1,8 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "./tauriInvoke";
 import Database from "@tauri-apps/plugin-sql";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+vi.mock("./tauriInvoke", () => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/plugin-sql", () => ({ default: { load: vi.fn() } }));
 
 const mockInvoke = vi.mocked(invoke);

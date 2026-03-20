@@ -1,0 +1,212 @@
+{
+  "errors": {
+    "generic": "Something went wrong: {{message}}",
+    "billing_cycle": {
+      "slave_needs_init_from_master": "No active billing cycle. This satellite register must be initialized from the main register first.",
+      "not_found": "Billing cycle not found.",
+      "not_found_for_delete": "Billing cycle not found.",
+      "cannot_delete_active": "The active billing cycle cannot be deleted.",
+      "master_has_no_active": "No active billing cycle on the main register."
+    },
+    "notfall_import": {
+      "billing_cycle_mismatch": "Billing cycle mismatch (export cycle ≠ target cycle). Import cancelled.",
+      "target_billing_cycle_not_found": "Target billing cycle not found."
+    },
+    "join_request": {
+      "not_found_or_handled": "Join request not found or already processed."
+    },
+    "config": {
+      "master_ws_url_missing": "Main register URL is not configured (Settings).",
+      "register_id_missing": "Register ID is not set.",
+      "my_sync_url_missing": "Your sync URL is not configured (Settings)."
+    },
+    "join": {
+      "master_has_no_active_billing_cycle": "Cannot join: main register did not provide an active billing cycle.",
+      "local_bookings_billing_cycle_mismatch": "Cannot join: this register already has bookings in billing cycle {{localBillingCycleId}} (active locally), but the main register is on {{masterBillingCycleId}}. Align billing cycles (e.g. reset) and try again.",
+      "local_bookings_no_active_cycle": "Cannot join: this register already has local bookings but no active billing cycle. Check or align the billing cycle (e.g. reset) and try again."
+    },
+    "leave": {
+      "slave_only": "Disconnecting is only available on satellite registers."
+    },
+    "merchant": {
+      "not_found": "Merchant not found."
+    },
+    "sync": {
+      "invalid_url_missing_port": "Invalid sync URL (port missing, e.g. wss://IP:8766).",
+      "peer_state_unknown": "Sync state for {{peerId}} is unknown. Please wait for sync.",
+      "incomplete_receipts": "Sync incomplete: receipts from {{peerId}} are missing on the main register (main: {{masterSeq}}, peer: {{peerSeq}}). Please wait for sync.",
+      "incomplete_voids": "Sync incomplete: voids from {{peerId}} are missing on the main register. Please wait for sync.",
+      "expect_join_request": "Expected join_request.",
+      "join_master_only": "Join is only allowed on the main register.",
+      "first_message_invalid": "First message must be join_request or sync_state.",
+      "join_invalid_token": "Invalid join token.",
+      "join_pending_approval": "Request saved. Waiting for approval by the main register.",
+      "leave_master_only": "Leave-network is only accepted by the main register.",
+      "closeout_master_only": "Closeout requests are only accepted by the main register.",
+      "closeout_receipts_pending": "Not all receipts from this satellite are on the main register yet. Please wait for sync.",
+      "closeout_voids_pending": "Not all voids from this satellite are on the main register yet. Please wait for sync.",
+      "reset_master_only": "Reset requests are only accepted by the main register.",
+      "reset_slave_data_pending": "Not all data from the satellite is on the main register yet. Please wait for sync.",
+      "reset_peers_pending": "Not all connected registers have received all receipts from this satellite. Please wait for sync and try again.",
+      "batch_billing_cycle_mismatch": "Sync batch belongs to a different billing cycle. Check billing cycle state.",
+      "join_rejected": "Rejected.",
+      "join_connection_closed": "Connection closed without join approval.",
+      "connection_closed": "Connection closed.",
+      "unexpected_message": "Unexpected message.",
+      "unexpected_response": "Unexpected response."
+    },
+    "peer": {
+      "master_only": "Only available on the main register.",
+      "cannot_remove_self": "You cannot remove your own register.",
+      "not_found_or_detached": "Register not found or already detached."
+    },
+    "url": {
+      "host_missing": "Invalid URL (host missing).",
+      "port_missing": "Invalid URL (port missing)."
+    },
+    "tls": {
+      "no_peer_certificate": "No peer certificate received.",
+      "fingerprint_mismatch": "TLS certificate fingerprint does not match pin for {{peerId}} (expected {{expected}}, got {{actual}}).",
+      "pkcs12_no_certificate": "PKCS#12 contains no certificate."
+    },
+    "internal": {
+      "sync_connections_unavailable": "Sync connection manager is not available."
+    }
+  },
+  "success": {
+    "join": {
+      "network_complete": "Joined the network. Peers, merchants, and billing cycle data were applied."
+    },
+    "slave_reset": {
+      "complete": "Local billing cycle was cleared and aligned with the main register."
+    },
+    "closeout": {
+      "confirmed": "Closeout confirmed: the main register has all data for this register. You can disconnect."
+    },
+    "leave": {
+      "detached": "Satellite register was disconnected locally (main/peers cleared)."
+    },
+    "sync": {
+      "started": "Server started, sync to {{peerCount}} peer(s) started. Removed {{removedSelfLoops}} self-connection(s)."
+    },
+    "billing_cycle": {
+      "reset": "Billing cycle reset. Merchant list and registers unchanged.",
+      "deleted": "Billing cycle deleted."
+    }
+  },
+  "settings": {
+    "language": {
+      "title": "Language",
+      "subtitle": "User interface",
+      "label": "Display language",
+      "optionEn": "English",
+      "optionDe": "German"
+    }
+  },
+  "syncStatus": {
+    "notConfigured": "Sync not configured – check settings.",
+    "unavailable": "Sync status unavailable.",
+    "noPeers": "No other registers on the network.",
+    "connected": "Connected to {{connected}} of {{total}} registers",
+    "disconnected": "Not connected (0 of {{total}} registers)"
+  },
+  "statusBar": {
+    "roleMain": "Main register",
+    "roleSlave": "Satellite register",
+    "currentBillingCycle": "Current billing cycle:",
+    "joinRequestsPending_one": "{{count}} join request pending",
+    "joinRequestsPending_other": "{{count}} join requests pending",
+    "joinRequestsAria": "{{count}} join request(s) pending – open",
+    "help": "Help"
+  },
+  "common": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "ellipsis": "…",
+    "dash": "—"
+  },
+  "home": {
+    "title": "Point of sale",
+    "roleMain": "Main register",
+    "roleSlave": "Satellite register",
+    "syncFetchError": "Unable to load sync status. Check settings or restart the application.",
+    "registersTitle": "Registered registers",
+    "registersEmpty": "No registers have joined yet.",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "lastSync": "Last sync:",
+    "neverSynced": "No sync yet",
+    "detachRegister": "Detach register from network",
+    "detach": "Detach",
+    "detachConfirm": "Are you sure you want to disconnect this register?",
+    "disconnect": "Disconnect",
+    "joinMainTitle": "Connect to main register",
+    "joinConnected": "Connected to the main register.",
+    "joinSearchAgain": "Search for main register again in Settings",
+    "joinSearching": "Searching for main register…",
+    "joinJoin": "Join",
+    "joinNoMaster": "No main register found. Enter the URL in Settings or search again later.",
+    "closeoutTitle": "Sign out (cycle complete)",
+    "closeoutHint": "When your shift ends, request closeout confirmation from the main register in Settings.",
+    "activeCycle": "Active billing cycle:",
+    "closeoutOkSince": "OK since {{time}}",
+    "closeoutWrongCycle": " (not for active cycle)",
+    "closeoutLabel": "Closeout:",
+    "closeoutNotRequested": "not requested",
+    "closeoutOpenSettings": "Request closeout (open Settings)",
+    "tileCashRegister": "Cash register",
+    "tileCashRegisterDesc": "Record customer checkout",
+    "tileSettlement": "Settlement",
+    "tileSettlementDesc": "Show merchant totals",
+    "tileVoid": "Void",
+    "tileVoidDesc": "Void a line or receipt",
+    "tileSyncStatus": "Sync status",
+    "tileSyncStatusDesc": "Connection to peers",
+    "tileMerchantAdmin": "Merchant admin",
+    "tileMerchantAdminDesc": "Merchant numbers & master data",
+    "tileMerchantOverviewMaster": "Merchant overview",
+    "tileMerchantOverviewMasterDesc": "Sales & bookings (main register)",
+    "tileMerchantOverviewSlave": "Merchant overview",
+    "tileMerchantOverviewSlaveDesc": "Sales & bookings (read-only)",
+    "tileJoinRequests": "Join requests",
+    "tileJoinRequestsDesc": "Approve or reject sign-ins",
+    "tileHandbook": "Handbook",
+    "tileHandbookDesc": "Help & guide",
+    "tileSettings": "Settings",
+    "tileSettingsDesc": "Register & network",
+    "joinCodeInvalid": "Please enter a 6-digit code (e.g. 123 456).",
+    "joinUrlRequired": "Please enter your own sync URL.",
+    "joinDialogTitle": "Join: {{name}}",
+    "joinCodeLabel": "Join code (6 digits, e.g. 123 456)",
+    "joinMyUrlLabel": "Your sync URL (e.g. wss://127.0.0.1:8766)",
+    "joinSubmit": "Join",
+    "joinSubmitting": "Joining…"
+  },
+  "cashRegister": {
+    "back": "← Back",
+    "loading": "Loading…",
+    "title": "Cash register – {{name}}",
+    "blockNotInitialized": "This register is not aligned with a main register. Set up as main register in Settings or join the main register.",
+    "blockNoActiveCycle": "No active billing cycle. Start a billing cycle in Settings.",
+    "unknownMerchantsIntro": "The following merchant number(s) are not on the merchant list:",
+    "bookAnywayQuestion": "Book anyway?",
+    "bookAnyway": "Book anyway",
+    "roster": "Roster:",
+    "change": "Change",
+    "person1Placeholder": "Person 1",
+    "person2Placeholder": "Person 2",
+    "save": "Save",
+    "quickEntryPlaceholder": "Quick entry: merchant number amount (Enter for next line)",
+    "positions": "Lines",
+    "phMerchantNumber": "Merchant no.",
+    "phAmount": "Amount",
+    "phDescription": "Description (optional)",
+    "removeRowTitle": "Remove (Ctrl+Del)",
+    "addPosition": "+ Add line (Ctrl+N)",
+    "completeCheckout": "Complete customer checkout",
+    "saving": "Saving…",
+    "bookingsBlocked": "Bookings are not possible right now.",
+    "minOneLine": "At least one line with merchant number and amount is required.",
+    "receiptSaved": "Receipt {{number}} saved."
+  }
+}

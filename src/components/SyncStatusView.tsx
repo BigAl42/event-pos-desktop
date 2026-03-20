@@ -12,7 +12,7 @@ import {
 import { useSyncStatus } from "../SyncStatusContext";
 import "./SyncStatusView.css";
 
-type Props = { onBack: () => void; onOpenEinstellungen?: () => void };
+type Props = { onBack: () => void; onOpenSettings?: () => void };
 
 function isWssUrl(wsUrl: string): boolean {
   return wsUrl.trim().toLowerCase().startsWith("wss:");
@@ -49,7 +49,7 @@ function formatZeit(iso: string | null): { text: string; isStale: boolean } {
   }
 }
 
-export default function SyncStatusView({ onBack, onOpenEinstellungen }: Props) {
+export default function SyncStatusView({ onBack, onOpenSettings }: Props) {
   const { entries, refresh, lastRefreshAt, pollMs } = useSyncStatus();
   const [role, setRole] = useState<string | null>(null);
   const [activeLaufId, setActiveLaufId] = useState<string | null>(null);
@@ -214,8 +214,8 @@ export default function SyncStatusView({ onBack, onOpenEinstellungen }: Props) {
       {error && (
         <div className="sync-status-error">
           <p>{error}</p>
-          {onOpenEinstellungen && (
-            <button type="button" onClick={onOpenEinstellungen}>
+          {onOpenSettings && (
+            <button type="button" onClick={onOpenSettings}>
               Einstellungen öffnen
             </button>
           )}

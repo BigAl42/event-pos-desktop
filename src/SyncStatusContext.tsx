@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getConfig, getSyncStatus, type SyncStatusEntry } from "./db";
 import { useSyncData } from "./SyncDataContext";
+import i18n from "./i18n";
 
 export const SYNC_STATUS_POLL_MS = 3500;
 
@@ -21,10 +22,12 @@ type SyncStatusState = {
 const SyncStatusContext = createContext<SyncStatusState | null>(null);
 
 function computeNotConfigured(syncError: string | null): boolean {
+  if (!syncError) return false;
   return (
-    !!syncError &&
-    (syncError.includes("Eigene Sync-URL nicht konfiguriert") ||
-      syncError.includes("Hauptkassen-URL nicht konfiguriert"))
+    syncError.includes("My sync URL is not configured") ||
+    syncError.includes("Main register URL is not configured") ||
+    syncError.includes("Eigene Sync-URL nicht konfiguriert") ||
+    syncError.includes("Hauptkassen-URL nicht konfiguriert")
   );
 }
 
@@ -36,11 +39,13 @@ function computeStatusText(args: {
 }): string {
   const { syncError, notConfigured, total, connected } = args;
   if (syncError) {
-    return notConfigured ? "Sync nicht konfiguriert – bitte Einstellungen prüfen." : "Sync-Status aktuell nicht abrufbar.";
+    return notConfigured
+      ? i18n.t("syncStatus.notConfigured")
+      : i18n.t("syncStatus.unavailable");
   }
-  if (total === 0) return "Keine weiteren Kassen im Netzwerk.";
-  if (connected > 0) return `Verbunden mit ${connected} von ${total} Kassen`;
-  return `Nicht verbunden (0 von ${total} Kassen)`;
+  if (total === 0) return i18n.t("syncStatus.noPeers");
+  if (connected > 0) return i18n.t("syncStatus.connected", { connected, total });
+  return i18n.t("syncStatus.disconnected", { total });
 }
 
 export function SyncStatusProvider({ children }: { children: React.ReactNode }) {
@@ -49,6 +54,15 @@ export function SyncStatusProvider({ children }: { children: React.ReactNode }) 
   const [entries, setEntries] = useState<SyncStatusEntry[]>([]);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [lastRefreshAt, setLastRefreshAt] = useState<number | null>(null);
+  const [i18nTick, setI18nTick] = useState(0);
+
+  useEffect(() => {
+    const onLang = () => setI18nTick((n) => n + 1);
+    i18n.on("languageChanged", onLang);
+    return () => {
+      i18n.off("languageChanged", onLang);
+    };
+  }, []);
 
   const load = useCallback(() => {
     getSyncStatus()
@@ -86,7 +100,7 @@ export function SyncStatusProvider({ children }: { children: React.ReactNode }) 
     const isConnected = !syncError && total > 0 && connected > 0;
     const statusText = computeStatusText({ syncError, notConfigured, total, connected });
     return { total, connected, notConfigured, isConnected, statusText };
-  }, [entries, syncError]);
+  }, [entries, syncError, i18nTick]);
 
   const value: SyncStatusState = useMemo(
     () => ({

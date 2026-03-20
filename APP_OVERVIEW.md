@@ -4,11 +4,18 @@
 - **Ziel**: Offline-fähiges Kassensystem mit mehreren Kassenplätzen, Händlerabrechnung, später P2P-Sync.
 - **Aktueller Stand**: Lokale Kasse **+ Master/Slave-Setup mit Sync**, Abrechnungsläufe, Storno und PDF-Export.
 
+## Internationalisierung (i18n)
+- **Stack**: `i18next` + `react-i18next` + Browser-Detector; **Standard-Locale EN**, **DE** wählbar (Einstellungen → Sprache; Persistenz `localStorage` / `i18nextLng`).
+- **Übersetzungen**: `src/locales/en.json`, `src/locales/de.json` (u.a. `errors.*` / `success.*` passend zu Rust-`UserMsg`-Codes, plus UI-Gruppen wie `home.*`, `cashRegister.*`, `statusBar.*`, `syncStatus.*`, `settings.language.*`).
+- **Invoke-Fehler**: `src/tauriInvoke.ts` wrappt Tauri-`invoke`; nutzerrelevante Rust-Fehler als JSON `{ code, params }` → `src/userMessage.ts` → `t("errors…")`.
+- **Intl**: `intlLocaleFor()` in `src/i18n.ts` (z.B. `en-GB` / `de-DE`) für Datums-/Zahlenformatierung, wo angebunden.
+- **UI-Extraktion**: Kernflüsse **HomePage**, **CashRegisterView**, **StatusBar**, **SyncStatusContext**-Texte sind über `t()` lokalisiert; größere Views (**SettlementView**, **SettingsView** Akkordeon-Texte, **VoidView**, Join/Merchant-Hilfen, PDF-Beschriftungen) können noch feste deutsche Strings enthalten – bei Änderungen nach und nach auf `t()`-Keys migrieren.
+
 ## Kern-Workflows
 - **Erststart**: „Als Master einrichten?“ oder „Netz beitreten“; Kassenname + 2 Personen erfassen.
-- **Startseite**: Tiles für **Kasse**, **Abrechnung**, **Handbuch**, **Einstellungen**; Sync-/Verbindungsstatus in der **Statuszeile (Footer)**.
-  - **Nebenkasse**: Join-/Verbinden-UI nur bei fehlender Verbindung/Sync-Fehler + sichtbare **Closeout/Abmelden**-Kachel (führt zu Einstellungen).
-- **Handbuch**: Markdown-Inhalte aus `docs/handbuch/` (pro Release gebundelt); TOC aus Frontmatter (`title`, `order`, `slug`). Struktur: Einstiege **Kassierer (Bedienung)** und **Technik / Administration**, dann Themenkapitel (Kasse, Storno, Abrechnung, Erststart, Einstellungen, Join-Anfragen, Sync-Status, Händler, Notfallmodus, Überblick). Eigene View mit TOC links, Inhalt rechts (react-markdown + remark-gfm). Einstiege: Startseite-Tile, Einstellungen-Header, Statuszeile „Hilfe“. **PDF-Export**: aktuelles Kapitel oder ganzes Handbuch via html2pdf.js + Save-Dialog + Tauri FS.
+- **Start** (`view === "start"`): **HomePage** – Tiles u.a. Kasse, Abrechnung, Handbuch, Einstellungen; Sync-Status in **StatusBar** (Footer).
+  - **Nebenkasse**: Join-/Verbinden-UI nur bei fehlender Verbindung/Sync-Fehler + **Closeout**-Hinweis (Einstellungen).
+- **Handbuch**: Markdown unter **`docs/handbuch/de/`** und **`docs/handbuch/en/`** (pro Release gebundelt); TOC aus Frontmatter (`title`, `order`, `slug`). Loader: `src/handbook/handbookIndex.ts` (Sprache aus `i18n.language`). View: **`HandbookView`** (lazy). Einstiege: Home-Tile, Einstellungen, StatusBar „Help“. **PDF-Export**: Kapitel/Gesamt via html2pdf.js + Tauri FS.
 - **Kasse**:
   - Kundenabrechnung mit 1–n Positionen: Händlernummer, Betrag, optional Bezeichnung.
   - Besetzung (Person 1/2) anzeigen/ändern.
@@ -36,17 +43,20 @@
 - **Frontend**: Vite + React + TypeScript.
 - **Backend**: Tauri (Rust) + SQLite.
 - **Datenbank**: SQLite im App-Datenverzeichnis; Migration: `src-tauri/migrations/001_initial.sql`.
-- **Backend-API**: Tauri-Commands (u.a. in `src-tauri/src/commands.rs`), Aufruf via `invoke` (z.B. `db.ts`).
-- **PDF-Abrechnung**: Daten aus `get_haendler_abrechnung_pdf_data`, Rendering als druckoptimiertes HTML (`src/components/HaendlerAbrechnungPdf.tsx`), Export via `src/utils/pdfExport.ts` (html2canvas + jsPDF).
-- **Handbuch**: `src/handbuch/handbuchIndex.ts` (Vite glob `docs/handbuch/**/*.md`, Frontmatter-Parse); `HandbuchView.tsx` + `src/utils/handbuchPdfExport.ts` (html2pdf.js für Multi-Page).
+- **Backend-API**: Tauri-Commands (u.a. in `src-tauri/src/commands.rs`); Frontend nutzt `invoke` über **`src/tauriInvoke.ts`** + `db.ts` für typisierte Aufrufe.
+- **PDF-Abrechnung**: Daten aus `get_haendler_abrechnung_pdf_data`, Rendering als druckoptimiertes HTML (`src/components/MerchantSettlementPdf.tsx`), Export via `src/utils/pdfExport.ts` (html2canvas + jsPDF).
+- **Handbuch**: `src/handbook/handbookIndex.ts` (Glob je Sprache unter `docs/handbuch/{de,en}/**/*.md`); `HandbookView.tsx` + `src/utils/handbookPdfExport.ts` (html2pdf.js für Multi-Page).
 - **Sync-Protokoll**: `src-tauri/src/sync/*` (WebSocket, `Message`-enum in `src-tauri/src/sync/protocol.rs`).
 
+## Frontend: Views (Auswahl, englische `view`-Keys in `App.tsx`)
+- u.a. `start`, `cash_register`, `settlement`, `void`, `sync_status`, `settings`, `handbook`, `merchant_admin`, `merchant_slave`, `merchant_drilldown`, `merchant_master_overview`, `merchant_master_drilldown`, `merchant_master_data`, `join_requests`.
+
 ## Wichtige Regeln/Leitplanken (aus Cursor-Rules)
-- **Read-only Nebenkasse**: Read-only-Views (Nebenkasse/Slave) dürfen keine Mutationen (kein CRUD/Import/Sync).
+- **Read-only Nebenkasse**: Read-only-Views (Nebenkasse/Slave) dürfen keine Mutationen (kein CRUD/Import/Sync); Komponente **`SlaveMerchantOverview`**.
 - **Aggregationen ins Backend**: Umsätze/Summen/Statistiken ausschließlich im Backend berechnen und als Command bereitstellen.
 - **Drilldowns**:
   - Listenzeilen nicht „unsichtbar“ klickbar; explizites Element (Details/Lupe).
-  - Drilldown als eigene View im globalen View-State mit sichtbarem Zurück-Button in den fachlich passenden Kontext.
+  - Drilldown als eigene View im globalen View-State (z.B. `merchant_drilldown`) mit sichtbarem Zurück-Button in den fachlich passenden Kontext.
 
 ## Tests & Qualität
 - **Vor jedem Commit**: `npm run test:all`, `npm run build`; zusätzlich einmal `npx tauri build` (vollständiger App-Build), Fehler beheben. Details: `.cursor/rules/tests-vor-commit.mdc`.

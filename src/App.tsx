@@ -2,43 +2,45 @@ import { useState, useEffect, Suspense, lazy } from "react";
 import { hasKasse, getConfig, startMasterServer, isMasterServerRunning, startSyncConnections } from "./db";
 import { SyncDataProvider } from "./SyncDataContext";
 import { SyncStatusProvider } from "./SyncStatusContext";
-import Startseite from "./components/Startseite";
-import ErststartDialog from "./components/ErststartDialog";
-import KasseView from "./components/KasseView";
-import AbrechnungView from "./components/AbrechnungView";
-import EinstellungenView from "./components/EinstellungenView";
-import HaendlerverwaltungView from "./components/HaendlerverwaltungView";
-import HaendlerSlaveView from "./components/HaendlerSlaveView";
-import HaendlerBuchungenDrilldown from "./components/HaendlerBuchungenDrilldown";
-import HaendlerMasterUebersichtView from "./components/HaendlerMasterUebersichtView";
-import JoinAnfragenView from "./components/JoinAnfragenView";
-import StornoView from "./components/StornoView";
+import HomePage from "./components/HomePage";
+import InitialSetupDialog from "./components/InitialSetupDialog";
+import CashRegisterView from "./components/CashRegisterView";
+import SettlementView from "./components/SettlementView";
+import SettingsView from "./components/SettingsView";
+import MerchantAdminView from "./components/MerchantAdminView";
+import SlaveMerchantOverview from "./components/SlaveMerchantOverview";
+import MerchantBookingsDrilldown from "./components/MerchantBookingsDrilldown";
+import MasterMerchantOverview from "./components/MasterMerchantOverview";
+import JoinRequestsView from "./components/JoinRequestsView";
+import VoidView from "./components/VoidView";
 import SyncStatusView from "./components/SyncStatusView";
-import Statuszeile from "./components/Statuszeile";
+import StatusBar from "./components/StatusBar";
 
-const HandbuchView = lazy(() => import("./components/HandbuchView"));
+const HandbookView = lazy(() => import("./components/HandbookView"));
 
 export type View =
   | "start"
-  | "kasse"
-  | "abrechnung"
-  | "storno"
+  | "cash_register"
+  | "settlement"
+  | "void"
   | "sync_status"
-  | "einstellungen"
-  | "handbuch"
-  | "haendler"
-  | "haendler_slave"
-  | "haendler_drilldown"
-  | "haendler_master_uebersicht"
-  | "haendler_master_drilldown"
-  | "haendler_stammdaten"
-  | "join_anfragen";
+  | "settings"
+  | "handbook"
+  | "merchant_admin"
+  | "merchant_slave"
+  | "merchant_drilldown"
+  | "merchant_master_overview"
+  | "merchant_master_drilldown"
+  | "merchant_master_data"
+  | "join_requests";
 
 function App() {
   const [setupDone, setSetupDone] = useState<boolean | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [view, setView] = useState<View>("start");
-  const [drilldownHaendler, setDrilldownHaendler] = useState<{ nummer: string; name: string } | null>(null);
+  const [drilldownMerchant, setDrilldownMerchant] = useState<{ nummer: string; name: string } | null>(
+    null
+  );
 
   useEffect(() => {
     (async () => {
@@ -56,7 +58,6 @@ function App() {
       const role = await getConfig("role");
       if (role !== "master" && role !== "slave") return;
 
-      // Hauptkasse: WebSocket-Server autostarten, aber nur wenn sauber konfiguriert.
       if (role === "master") {
         try {
           const running = await isMasterServerRunning();
@@ -69,18 +70,17 @@ function App() {
             }
           }
         } catch {
-          // Autostart ist best-effort; manuell in Einstellungen möglich.
+          // Autostart is best-effort; user can start manually in Settings.
         }
       }
 
-      // Sync autostarten, aber nur wenn eigene Sync-URL gesetzt ist.
       try {
         const myWsUrl = await getConfig("my_ws_url");
         if (myWsUrl && myWsUrl.trim()) {
           await startSyncConnections();
         }
       } catch {
-        // Sync-URL oder Peers ggf. noch nicht konfiguriert; ignorieren
+        // Sync URL or peers may not be configured yet
       }
     })();
   }, [setupDone]);
@@ -88,8 +88,8 @@ function App() {
   if (setupError) {
     return (
       <div style={{ padding: "2rem" }}>
-        <h2>Start fehlgeschlagen</h2>
-        <p>Die Anwendung konnte nicht initialisiert werden.</p>
+        <h2>Startup failed</h2>
+        <p>The application could not be initialized.</p>
         <pre style={{ whiteSpace: "pre-wrap" }}>{setupError}</pre>
       </div>
     );
@@ -98,14 +98,14 @@ function App() {
   if (setupDone === null) {
     return (
       <div style={{ padding: "2rem", textAlign: "center" }}>
-        Lade…
+        Loading…
       </div>
     );
   }
 
   if (!setupDone) {
     return (
-      <ErststartDialog
+      <InitialSetupDialog
         onDone={() => {
           setSetupDone(true);
         }}
@@ -118,80 +118,80 @@ function App() {
       <SyncStatusProvider>
         <div className="app-layout">
           <main className="app-main">
-            <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center" }}>Lade…</div>}>
-            {view === "kasse" && <KasseView onBack={() => setView("start")} />}
-            {view === "abrechnung" && <AbrechnungView onBack={() => setView("start")} />}
-            {view === "storno" && <StornoView onBack={() => setView("start")} />}
+            <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center" }}>Loading…</div>}>
+            {view === "cash_register" && <CashRegisterView onBack={() => setView("start")} />}
+            {view === "settlement" && <SettlementView onBack={() => setView("start")} />}
+            {view === "void" && <VoidView onBack={() => setView("start")} />}
             {view === "sync_status" && (
               <SyncStatusView
                 onBack={() => setView("start")}
-                onOpenEinstellungen={() => setView("einstellungen")}
+                onOpenSettings={() => setView("settings")}
               />
             )}
-            {view === "einstellungen" && (
-              <EinstellungenView
+            {view === "settings" && (
+              <SettingsView
                 onBack={() => setView("start")}
-                onOpenHandbuch={() => setView("handbuch")}
+                onOpenHandbook={() => setView("handbook")}
               />
             )}
-            {view === "haendler" && <HaendlerverwaltungView onBack={() => setView("start")} />}
-            {view === "haendler_stammdaten" && (
-              <HaendlerverwaltungView onBack={() => setView("haendler_master_uebersicht")} />
+            {view === "merchant_admin" && <MerchantAdminView onBack={() => setView("start")} />}
+            {view === "merchant_master_data" && (
+              <MerchantAdminView onBack={() => setView("merchant_master_overview")} />
             )}
-            {view === "haendler_master_uebersicht" && (
-              <HaendlerMasterUebersichtView
-                onBack={() => setView("start")}
-                onOpenDrilldown={(nummer, name) => {
-                  setDrilldownHaendler({ nummer, name });
-                  setView("haendler_master_drilldown");
-                }}
-                onOpenStammdaten={() => setView("haendler_stammdaten")}
-              />
-            )}
-            {view === "haendler_slave" && (
-              <HaendlerSlaveView
+            {view === "merchant_master_overview" && (
+              <MasterMerchantOverview
                 onBack={() => setView("start")}
                 onOpenDrilldown={(nummer, name) => {
-                  setDrilldownHaendler({ nummer, name });
-                  setView("haendler_drilldown");
+                  setDrilldownMerchant({ nummer, name });
+                  setView("merchant_master_drilldown");
+                }}
+                onOpenMasterData={() => setView("merchant_master_data")}
+              />
+            )}
+            {view === "merchant_slave" && (
+              <SlaveMerchantOverview
+                onBack={() => setView("start")}
+                onOpenDrilldown={(nummer, name) => {
+                  setDrilldownMerchant({ nummer, name });
+                  setView("merchant_drilldown");
                 }}
               />
             )}
-            {view === "haendler_drilldown" && drilldownHaendler && (
-              <HaendlerBuchungenDrilldown
-                haendlernummer={drilldownHaendler.nummer}
-                haendlerName={drilldownHaendler.name}
-                onClose={() => setView("haendler_slave")}
+            {view === "merchant_drilldown" && drilldownMerchant && (
+              <MerchantBookingsDrilldown
+                haendlernummer={drilldownMerchant.nummer}
+                haendlerName={drilldownMerchant.name}
+                onClose={() => setView("merchant_slave")}
               />
             )}
-            {view === "haendler_master_drilldown" && drilldownHaendler && (
-              <HaendlerBuchungenDrilldown
-                haendlernummer={drilldownHaendler.nummer}
-                haendlerName={drilldownHaendler.name}
-                onClose={() => setView("haendler_master_uebersicht")}
+            {view === "merchant_master_drilldown" && drilldownMerchant && (
+              <MerchantBookingsDrilldown
+                haendlernummer={drilldownMerchant.nummer}
+                haendlerName={drilldownMerchant.name}
+                onClose={() => setView("merchant_master_overview")}
               />
             )}
-            {view === "join_anfragen" && <JoinAnfragenView onBack={() => setView("start")} />}
-            {view === "handbuch" && <HandbuchView onBack={() => setView("start")} />}
+            {view === "join_requests" && <JoinRequestsView onBack={() => setView("start")} />}
+            {view === "handbook" && <HandbookView onBack={() => setView("start")} />}
             {view === "start" && (
-              <Startseite
-                onOpenKasse={() => setView("kasse")}
-                onOpenAbrechnung={() => setView("abrechnung")}
-                onOpenStorno={() => setView("storno")}
+              <HomePage
+                onOpenCashRegister={() => setView("cash_register")}
+                onOpenSettlement={() => setView("settlement")}
+                onOpenVoid={() => setView("void")}
                 onOpenSyncStatus={() => setView("sync_status")}
-                onOpenEinstellungen={() => setView("einstellungen")}
-                onOpenHandbuch={() => setView("handbuch")}
-                onOpenHaendler={() => setView("haendler")}
-                onOpenHaendlerMaster={() => setView("haendler_master_uebersicht")}
-                onOpenHaendlerSlave={() => setView("haendler_slave")}
-                onOpenJoinAnfragen={() => setView("join_anfragen")}
+                onOpenSettings={() => setView("settings")}
+                onOpenHandbook={() => setView("handbook")}
+                onOpenMerchantAdmin={() => setView("merchant_admin")}
+                onOpenMerchantMasterOverview={() => setView("merchant_master_overview")}
+                onOpenMerchantSlaveOverview={() => setView("merchant_slave")}
+                onOpenJoinRequests={() => setView("join_requests")}
               />
             )}
             </Suspense>
           </main>
-          <Statuszeile
-            onOpenJoinAnfragen={() => setView("join_anfragen")}
-            onOpenHandbuch={() => setView("handbuch")}
+          <StatusBar
+            onOpenJoinRequests={() => setView("join_requests")}
+            onOpenHandbook={() => setView("handbook")}
           />
         </div>
       </SyncStatusProvider>

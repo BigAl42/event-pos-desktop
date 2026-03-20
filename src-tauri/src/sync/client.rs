@@ -1,6 +1,7 @@
 //! WebSocket-Client: Join-Request (Phase 2) und Peer-Sync (Phase 3)
 
 use crate::db;
+use crate::user_error::{user_msg, UserMsg};
 use crate::sync::protocol::{
     Ack, AbrechnungslaufReset, CloseoutApprove, CloseoutReject, CloseoutRequest, JoinApprove,
     JoinRequest, LeaveNetworkAck, LeaveNetworkRequest, Message, RequestSlaveReset, SyncState,
@@ -33,8 +34,10 @@ async fn connect_wss_raw(
     let parsed = Url::parse(url).map_err(|e| e.to_string())?;
     let host = parsed
         .host_str()
-        .ok_or_else(|| "Ungültige URL (host fehlt)".to_string())?;
-    let port = parsed.port_or_known_default().ok_or_else(|| "Ungültige URL (port fehlt)".to_string())?;
+        .ok_or_else(|| user_msg("errors.url.host_missing"))?;
+    let port = parsed
+        .port_or_known_default()
+        .ok_or_else(|| user_msg("errors.url.port_missing"))?;
     let addr = format!("{}:{}", host, port);
 
     let tcp = TcpStream::connect(&addr).await.map_err(|e| e.to_string())?;
@@ -52,7 +55,7 @@ async fn connect_wss_raw(
         .get_ref()
         .peer_certificate()
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Kein Peer-Zertifikat erhalten".to_string())
+        .ok_or_else(|| user_msg("errors.tls.no_peer_certificate"))
         .and_then(|c| c.to_der().map_err(|e| e.to_string()))
         .map(|der| crate::tls::sha256_fingerprint_hex(&der))?;
     let req = url.into_client_request().map_err(|e| e.to_string())?;
@@ -72,12 +75,13 @@ async fn connect_wss_pinned(
     let (ws, peer_fp) = connect_wss_raw(url).await?;
     if let Some(expected) = db::get_cert_pin(app, peer_kassen_id).map_err(|e| e.to_string())? {
         if !expected.trim().is_empty() && expected.trim() != peer_fp {
-            return Err(format!(
-                "TLS Zertifikat-Fingerprint passt nicht zu Pin für {} (expected {}, got {}).",
-                peer_kassen_id,
-                expected.trim(),
-                peer_fp
-            ));
+            return Err(
+                UserMsg::new("errors.tls.fingerprint_mismatch")
+                    .with_param("peerId", peer_kassen_id.to_string())
+                    .with_param("expected", expected.trim().to_string())
+                    .with_param("actual", peer_fp)
+                    .to_json(),
+            );
         }
     }
     Ok(ws)
@@ -116,7 +120,11 @@ pub async fn send_join_request(
                 match msg {
                     Message::JoinApprove(approve) => return Ok(approve),
                     Message::JoinReject(reject) => {
-                        return Err(reject.reason.unwrap_or_else(|| "Abgelehnt".into()))
+                        return Err(
+                            reject
+                                .reason
+                                .unwrap_or_else(|| user_msg("errors.sync.join_rejected")),
+                        )
                     }
                     Message::Error(e) => {
                         if e.code == "pending" {
@@ -136,7 +144,7 @@ pub async fn send_join_request(
         }
     }
 
-    Err("Verbindung geschlossen ohne join_approve".into())
+    Err(user_msg("errors.sync.join_connection_closed"))
 }
 
 /// Sendet eine Reset-Anfrage an die Hauptkasse; bei Erfolg wird AbrechnungslaufReset zurückgegeben (Anwendung erfolgt im Aufrufer).
@@ -161,17 +169,17 @@ pub async fn send_slave_reset_request(
     let frame = read
         .next()
         .await
-        .ok_or("Verbindung geschlossen")?
+        .ok_or_else(|| user_msg("errors.sync.connection_closed"))?
         .map_err(|e| e.to_string())?;
     let text = match frame {
         WsMessage::Text(t) => t,
-        _ => return Err("Unerwartete Nachricht".into()),
+        _ => return Err(user_msg("errors.sync.unexpected_message")),
     };
     let resp = Message::from_json(&text).map_err(|e| e.to_string())?;
     match resp {
         Message::AbrechnungslaufReset(r) => Ok(r),
         Message::Error(e) => Err(e.message),
-        _ => Err("Unerwartete Antwort".into()),
+        _ => Err(user_msg("errors.sync.unexpected_response")),
     }
 }
 
@@ -199,18 +207,18 @@ pub async fn send_closeout_request(
     let frame = read
         .next()
         .await
-        .ok_or("Verbindung geschlossen")?
+        .ok_or_else(|| user_msg("errors.sync.connection_closed"))?
         .map_err(|e| e.to_string())?;
     let text = match frame {
         WsMessage::Text(t) => t,
-        _ => return Err("Unerwartete Nachricht".into()),
+        _ => return Err(user_msg("errors.sync.unexpected_message")),
     };
     let resp = Message::from_json(&text).map_err(|e| e.to_string())?;
     match resp {
         Message::CloseoutApprove(r) => Ok(r),
         Message::CloseoutReject(CloseoutReject { message, .. }) => Err(message),
         Message::Error(e) => Err(e.message),
-        _ => Err("Unerwartete Antwort".into()),
+        _ => Err(user_msg("errors.sync.unexpected_response")),
     }
 }
 
@@ -234,17 +242,17 @@ pub async fn send_leave_network_request(
     let frame = read
         .next()
         .await
-        .ok_or("Verbindung geschlossen")?
+        .ok_or_else(|| user_msg("errors.sync.connection_closed"))?
         .map_err(|e| e.to_string())?;
     let text = match frame {
         WsMessage::Text(t) => t,
-        _ => return Err("Unerwartete Nachricht".into()),
+        _ => return Err(user_msg("errors.sync.unexpected_message")),
     };
     let resp = Message::from_json(&text).map_err(|e| e.to_string())?;
     match resp {
         Message::LeaveNetworkAck(r) => Ok(r),
         Message::Error(e) => Err(e.message),
-        _ => Err("Unerwartete Antwort".into()),
+        _ => Err(user_msg("errors.sync.unexpected_response")),
     }
 }
 

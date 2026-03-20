@@ -1,6 +1,7 @@
 //! DB-Zugriffe für Sync (Phase 3)
 
 use crate::db;
+use crate::user_error::user_msg;
 use crate::sync::protocol::{
     AbrechnungslaufReset, BuchungRow, HaendlerInfo, KundenabrechnungBatch, KundenabrechnungItem,
     KundenabrechnungRow, StornoBatch, StornoRow,
@@ -133,10 +134,7 @@ pub fn apply_batch(
     if let Some(batch_lauf_id) = &batch.abrechnungslauf_id {
         if let Some(ref current_id) = current_lauf_id_opt {
             if current_id != batch_lauf_id {
-                return Err(
-                    "Sync-Batch gehört zu einem anderen Abrechnungslauf. Bitte Laufzustände prüfen."
-                        .to_string(),
-                );
+                return Err(user_msg("errors.sync.batch_billing_cycle_mismatch"));
             }
         }
     }

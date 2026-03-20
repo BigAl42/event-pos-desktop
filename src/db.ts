@@ -1,5 +1,6 @@
 import Database from "@tauri-apps/plugin-sql";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "./tauriInvoke";
+import { translateInvokeError } from "./userMessage";
 
 let db: Database | null = null;
 
@@ -11,7 +12,7 @@ export async function getDb(): Promise<Database> {
     return db;
   } catch (e) {
     throw new Error(
-      `Datenbank konnte nicht initialisiert werden (init_db/Database.load fehlgeschlagen): ${String(e)}`
+      translateInvokeError(e)
     );
   }
 }

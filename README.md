@@ -121,4 +121,4 @@ docker run --rm -t -v "${PWD}:/workspace" -w /workspace/src-tauri kassensystem-r
 
 - DB: SQLite im App-Datenverzeichnis; Migrationen unter `src-tauri/migrations/`.
 - Sync/Backend: Rust Commands unter `src-tauri/src/commands.rs`, Sync-Protokoll unter `src-tauri/src/sync/`.
-- Handbuch: Markdown unter `docs/handbuch/` (TOC aus Frontmatter: `title`, `order`, `slug`; Einstiege „Kassierer“ / „Technik“ + Themenkapitel), Anzeige in `src/components/HandbuchView.tsx`.
+- Handbuch: Markdown unter `docs/handbuch/de/` und `docs/handbuch/en/` (TOC aus Frontmatter: `title`, `order`, `slug`), gebündelt über `src/handbook/handbookIndex.ts`, Anzeige in `src/components/HandbookView.tsx`.

@@ -1,0 +1,212 @@
+{
+  "errors": {
+    "generic": "Etwas ist schiefgelaufen: {{message}}",
+    "billing_cycle": {
+      "slave_needs_init_from_master": "Kein aktiver Abrechnungslauf. Diese Nebenkasse muss zuerst von der Hauptkasse initialisiert werden.",
+      "not_found": "Abrechnungslauf nicht gefunden.",
+      "not_found_for_delete": "Abrechnungslauf nicht gefunden.",
+      "cannot_delete_active": "Aktiver Abrechnungslauf kann nicht gelöscht werden.",
+      "master_has_no_active": "Kein aktiver Abrechnungslauf auf der Hauptkasse."
+    },
+    "notfall_import": {
+      "billing_cycle_mismatch": "Abrechnungslauf stimmt nicht überein (Export-Lauf ≠ Ziel-Lauf). Import abgebrochen.",
+      "target_billing_cycle_not_found": "Ziel-Abrechnungslauf nicht gefunden."
+    },
+    "join_request": {
+      "not_found_or_handled": "Join-Anfrage nicht gefunden oder bereits bearbeitet."
+    },
+    "config": {
+      "master_ws_url_missing": "Hauptkassen-URL nicht konfiguriert (Einstellungen).",
+      "register_id_missing": "Kassen-ID nicht gesetzt.",
+      "my_sync_url_missing": "Eigene Sync-URL nicht konfiguriert (Einstellungen)."
+    },
+    "join": {
+      "master_has_no_active_billing_cycle": "Join nicht möglich: Hauptkasse hat keinen aktiven Abrechnungslauf übertragen.",
+      "local_bookings_billing_cycle_mismatch": "Join nicht möglich: Nebenkasse hat bereits lokale Buchungen im Abrechnungslauf {{localBillingCycleId}} (lokal aktiv), die Hauptkasse ist im Abrechnungslauf {{masterBillingCycleId}}. Bitte Abrechnungsläufe angleichen (z. B. Reset) und erneut versuchen.",
+      "local_bookings_no_active_cycle": "Join nicht möglich: Nebenkasse hat bereits lokale Buchungen, aber keinen aktiven Abrechnungslauf. Bitte Abrechnungslauf prüfen/angleichen (z. B. Reset) und erneut versuchen."
+    },
+    "leave": {
+      "slave_only": "Entkoppeln ist nur auf Nebenkassen möglich."
+    },
+    "merchant": {
+      "not_found": "Händler nicht gefunden."
+    },
+    "sync": {
+      "invalid_url_missing_port": "Ungültige Sync-URL (Port fehlt, z. B. wss://IP:8766).",
+      "peer_state_unknown": "Sync-Stand von {{peerId}} unbekannt. Bitte Sync abwarten.",
+      "incomplete_receipts": "Sync noch nicht vollständig: Belege von {{peerId}} fehlen auf der Hauptkasse (Master: {{masterSeq}}, Peer: {{peerSeq}}). Bitte Sync abwarten.",
+      "incomplete_voids": "Sync noch nicht vollständig: Stornos von {{peerId}} fehlen auf der Hauptkasse. Bitte Sync abwarten.",
+      "expect_join_request": "Erwarte join_request.",
+      "join_master_only": "Join nur auf Hauptkasse.",
+      "first_message_invalid": "Erste Nachricht muss join_request oder sync_state sein.",
+      "join_invalid_token": "Ungültiger Join-Token.",
+      "join_pending_approval": "Anfrage gespeichert. Warte auf Freigabe durch Master.",
+      "leave_master_only": "Leave-Network nur an Hauptkasse.",
+      "closeout_master_only": "Closeout-Anfrage nur an Hauptkasse.",
+      "closeout_receipts_pending": "Noch nicht alle Buchungen dieser Nebenkasse auf der Hauptkasse. Bitte Sync abwarten.",
+      "closeout_voids_pending": "Noch nicht alle Stornos dieser Nebenkasse auf der Hauptkasse. Bitte Sync abwarten.",
+      "reset_master_only": "Reset-Anfrage nur an Hauptkasse.",
+      "reset_slave_data_pending": "Noch nicht alle Daten der Nebenkasse auf der Hauptkasse. Bitte Sync abwarten.",
+      "reset_peers_pending": "Nicht alle verbundenen Kassen haben alle Buchungen dieser Nebenkasse übernommen. Bitte Sync abwarten und erneut versuchen.",
+      "batch_billing_cycle_mismatch": "Sync-Batch gehört zu einem anderen Abrechnungslauf. Bitte Laufzustände prüfen.",
+      "join_rejected": "Abgelehnt.",
+      "join_connection_closed": "Verbindung geschlossen ohne join_approve.",
+      "connection_closed": "Verbindung geschlossen.",
+      "unexpected_message": "Unerwartete Nachricht.",
+      "unexpected_response": "Unerwartete Antwort."
+    },
+    "peer": {
+      "master_only": "Nur auf der Hauptkasse möglich.",
+      "cannot_remove_self": "Eigene Kasse kann nicht entfernt werden.",
+      "not_found_or_detached": "Kasse nicht gefunden oder bereits entkoppelt."
+    },
+    "url": {
+      "host_missing": "Ungültige URL (host fehlt).",
+      "port_missing": "Ungültige URL (port fehlt)."
+    },
+    "tls": {
+      "no_peer_certificate": "Kein Peer-Zertifikat erhalten.",
+      "fingerprint_mismatch": "TLS-Zertifikat-Fingerprint passt nicht zu Pin für {{peerId}} (erwartet {{expected}}, erhalten {{actual}}).",
+      "pkcs12_no_certificate": "PKCS#12 enthält kein Zertifikat."
+    },
+    "internal": {
+      "sync_connections_unavailable": "SyncConnectionsState nicht verfügbar."
+    }
+  },
+  "success": {
+    "join": {
+      "network_complete": "Netz beigetreten. Peer-, Händler- und Abrechnungslaufdaten übernommen."
+    },
+    "slave_reset": {
+      "complete": "Lokaler Abrechnungslauf wurde geleert und mit dem Abrechnungslauf der Hauptkasse abgeglichen."
+    },
+    "closeout": {
+      "confirmed": "Closeout bestätigt: Hauptkasse hat alle Daten dieser Kasse. Abmelden ist möglich."
+    },
+    "leave": {
+      "detached": "Nebenkasse wurde lokal entkoppelt (Master/Peers vergessen)."
+    },
+    "sync": {
+      "started": "Server gestartet, Sync zu {{peerCount}} Peer(s) gestartet. {{removedSelfLoops}} Selbstverbindung(en) entfernt."
+    },
+    "billing_cycle": {
+      "reset": "Abrechnungslauf zurückgesetzt. Händlerliste und Kassen unverändert.",
+      "deleted": "Abrechnungslauf gelöscht."
+    }
+  },
+  "settings": {
+    "language": {
+      "title": "Sprache",
+      "subtitle": "Benutzeroberfläche",
+      "label": "Anzeigesprache",
+      "optionEn": "Englisch",
+      "optionDe": "Deutsch"
+    }
+  },
+  "syncStatus": {
+    "notConfigured": "Sync nicht konfiguriert – bitte Einstellungen prüfen.",
+    "unavailable": "Sync-Status aktuell nicht abrufbar.",
+    "noPeers": "Keine weiteren Kassen im Netzwerk.",
+    "connected": "Verbunden mit {{connected}} von {{total}} Kassen",
+    "disconnected": "Nicht verbunden (0 von {{total}} Kassen)"
+  },
+  "statusBar": {
+    "roleMain": "Hauptkasse",
+    "roleSlave": "Nebenkasse",
+    "currentBillingCycle": "Aktueller Abrechnungslauf:",
+    "joinRequestsPending_one": "{{count}} Join-Anfrage ausstehend",
+    "joinRequestsPending_other": "{{count}} Join-Anfragen ausstehend",
+    "joinRequestsAria": "{{count}} Join-Anfrage(n) ausstehend – öffnen",
+    "help": "Hilfe"
+  },
+  "common": {
+    "back": "Zurück",
+    "cancel": "Abbrechen",
+    "ellipsis": "…",
+    "dash": "—"
+  },
+  "home": {
+    "title": "Kassensystem",
+    "roleMain": "Hauptkasse",
+    "roleSlave": "Nebenkasse",
+    "syncFetchError": "Sync-Status aktuell nicht abrufbar. Bitte Einstellungen prüfen oder Anwendung neu starten.",
+    "registersTitle": "Angemeldete Kassen",
+    "registersEmpty": "Noch keine Kassen angemeldet.",
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "lastSync": "Letzter Sync:",
+    "neverSynced": "Noch kein Sync erfolgt",
+    "detachRegister": "Kasse vom Netzwerk entkoppeln",
+    "detach": "Entkoppeln",
+    "detachConfirm": "Sind Sie sicher, dass Sie die Verbindung zu dieser Kasse trennen möchten?",
+    "disconnect": "Verbindung trennen",
+    "joinMainTitle": "Mit Hauptkasse verbinden",
+    "joinConnected": "Mit Hauptkasse verbunden.",
+    "joinSearchAgain": "In Einstellungen Hauptkasse erneut suchen",
+    "joinSearching": "Suche Hauptkasse…",
+    "joinJoin": "Beitreten",
+    "joinNoMaster": "Keine Hauptkasse gefunden. In Einstellungen URL eintragen oder später erneut suchen.",
+    "closeoutTitle": "Abmelden (Lauf fertig)",
+    "closeoutHint": "Wenn deine Schicht zu Ende ist, fordere in den Einstellungen eine Closeout-Bestätigung der Hauptkasse an.",
+    "activeCycle": "Aktiver Lauf:",
+    "closeoutOkSince": "OK seit {{time}}",
+    "closeoutWrongCycle": " (nicht für aktiven Lauf)",
+    "closeoutLabel": "Closeout:",
+    "closeoutNotRequested": "nicht angefragt",
+    "closeoutOpenSettings": "Closeout anfragen (Einstellungen öffnen)",
+    "tileCashRegister": "Kasse",
+    "tileCashRegisterDesc": "Kundenabrechnung erfassen",
+    "tileSettlement": "Abrechnung",
+    "tileSettlementDesc": "Händler-Summen anzeigen",
+    "tileVoid": "Storno",
+    "tileVoidDesc": "Position oder Beleg stornieren",
+    "tileSyncStatus": "Sync-Status",
+    "tileSyncStatusDesc": "Verbindung zu Peers",
+    "tileMerchantAdmin": "Händlerverwaltung",
+    "tileMerchantAdminDesc": "Stammdaten Händlernummern",
+    "tileMerchantOverviewMaster": "Händlerübersicht",
+    "tileMerchantOverviewMasterDesc": "Umsätze & Buchungen (Hauptkasse)",
+    "tileMerchantOverviewSlave": "Händlerübersicht",
+    "tileMerchantOverviewSlaveDesc": "Umsätze & Buchungen (read-only)",
+    "tileJoinRequests": "Join-Anfragen",
+    "tileJoinRequestsDesc": "Anmeldungen annehmen/ablehnen",
+    "tileHandbook": "Handbuch",
+    "tileHandbookDesc": "Hilfe & Anleitung",
+    "tileSettings": "Einstellungen",
+    "tileSettingsDesc": "Kasse & Netzwerk",
+    "joinCodeInvalid": "Bitte 6-stelligen Code eingeben (z.B. 123 456).",
+    "joinUrlRequired": "Bitte eigene Sync-URL eintragen.",
+    "joinDialogTitle": "Beitreten: {{name}}",
+    "joinCodeLabel": "Join-Code (6 Ziffern, z.B. 123 456)",
+    "joinMyUrlLabel": "Eigene Sync-URL (z.B. wss://127.0.0.1:8766)",
+    "joinSubmit": "Beitreten",
+    "joinSubmitting": "Beitreten…"
+  },
+  "cashRegister": {
+    "back": "← Zurück",
+    "loading": "Lade…",
+    "title": "Kasse – {{name}}",
+    "blockNotInitialized": "Kasse ist nicht mit einer Hauptkasse abgestimmt. Bitte in den Einstellungen als Hauptkasse einrichten oder an die Hauptkasse koppeln.",
+    "blockNoActiveCycle": "Kein aktiver Abrechnungslauf. Bitte in den Einstellungen einen Abrechnungslauf starten.",
+    "unknownMerchantsIntro": "Folgende Händlernummer(n) sind nicht in der Händlerliste:",
+    "bookAnywayQuestion": "Trotzdem buchen?",
+    "bookAnyway": "Trotzdem buchen",
+    "roster": "Besetzung:",
+    "change": "Ändern",
+    "person1Placeholder": "Person 1",
+    "person2Placeholder": "Person 2",
+    "save": "Speichern",
+    "quickEntryPlaceholder": "Schnelleingabe: Händlernummer Betrag (Enter für nächste Position)",
+    "positions": "Positionen",
+    "phMerchantNumber": "Händlernummer",
+    "phAmount": "Betrag",
+    "phDescription": "Bezeichnung (optional)",
+    "removeRowTitle": "Entfernen (Strg+Entf)",
+    "addPosition": "+ Position hinzufügen (Strg+N)",
+    "completeCheckout": "Kundenabrechnung abschließen",
+    "saving": "Speichern…",
+    "bookingsBlocked": "Buchungen sind derzeit nicht möglich.",
+    "minOneLine": "Mindestens eine Position mit Händlernummer und Betrag erforderlich.",
+    "receiptSaved": "Beleg {{number}} gespeichert."
+  }
+}

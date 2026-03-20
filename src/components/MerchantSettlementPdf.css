@@ -1,0 +1,152 @@
+.merchant-settlement-pdf {
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  padding: 18mm;
+  background: #fff;
+  color: #111;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 12pt;
+  line-height: 1.25;
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+.merchant-settlement-pdf__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10mm;
+  margin-bottom: 10mm;
+}
+
+.merchant-settlement-pdf__title {
+  font-size: 18pt;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.merchant-settlement-pdf__subtitle {
+  margin-top: 2mm;
+  font-size: 11pt;
+  color: #444;
+}
+
+.merchant-settlement-pdf__meta {
+  font-size: 9.5pt;
+  color: #444;
+  text-align: right;
+}
+
+.merchant-settlement-pdf__meta .k {
+  display: inline-block;
+  min-width: 14mm;
+  color: #666;
+  margin-right: 2mm;
+}
+
+.merchant-settlement-pdf__meta .v {
+  display: inline-block;
+  max-width: 70mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.merchant-settlement-pdf__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm;
+  margin-bottom: 10mm;
+}
+
+.merchant-settlement-pdf__card {
+  border: 1px solid #ddd;
+  border-radius: 2mm;
+  padding: 5mm;
+}
+
+.merchant-settlement-pdf__cardTitle {
+  font-size: 10pt;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 3mm;
+}
+
+.merchant-settlement-pdf__kv {
+  display: grid;
+  grid-template-columns: 30mm 1fr;
+  gap: 2mm 3mm;
+}
+
+.merchant-settlement-pdf__kv .k {
+  color: #666;
+  font-size: 9.5pt;
+}
+
+.merchant-settlement-pdf__kv .v {
+  font-size: 10.5pt;
+}
+
+.merchant-settlement-pdf__summe {
+  border: 2px solid #111;
+  border-radius: 2mm;
+  padding: 7mm;
+  margin: 4mm 0 8mm;
+}
+
+.merchant-settlement-pdf__summeLabel {
+  font-size: 10pt;
+  color: #444;
+  margin-bottom: 2mm;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.merchant-settlement-pdf__summeValue {
+  font-size: 28pt;
+  font-weight: 900;
+}
+
+.merchant-settlement-pdf__facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6mm;
+  margin-top: 4mm;
+}
+
+.merchant-settlement-pdf__facts .fact {
+  border: 1px solid #eee;
+  border-radius: 2mm;
+  padding: 4mm;
+}
+
+.merchant-settlement-pdf__facts .k {
+  font-size: 9pt;
+  color: #666;
+  margin-bottom: 1mm;
+}
+
+.merchant-settlement-pdf__facts .v {
+  font-size: 14pt;
+  font-weight: 800;
+}
+
+.merchant-settlement-pdf__footer {
+  margin-top: 12mm;
+  font-size: 9pt;
+  color: #666;
+}
+
+.merchant-settlement-pdf__footer .line {
+  border-top: 1px solid #ddd;
+  margin-bottom: 3mm;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+

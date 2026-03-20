@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { vi, beforeAll } from "vitest";
 import { randomFillSync } from "crypto";
+import i18n from "../i18n";
+
+beforeAll(async () => {
+  await i18n.changeLanguage("en");
+});
 
 // Tauri dialog plugin is used for confirm/open/save in UI.
 // In tests we provide safe defaults; specific tests can override via vi.mocked(...).

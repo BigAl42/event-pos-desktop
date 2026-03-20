@@ -7,7 +7,7 @@ alwaysApply: true
 
 - **Vite `import.meta.glob` für Raw-Inhalte**
   - Nicht die veraltete Option `as: 'raw'` verwenden (Deprecation-Warnung).
-  - Stattdessen: `query: '?raw', import: 'default'` (siehe z. B. `src/handbuch/handbuchIndex.ts`).
+  - Stattdessen: `query: '?raw', import: 'default'` (siehe z. B. `src/handbook/handbookIndex.ts`).
 
 - **Chunk-Größe und Lazy Loading**
   - Schwere Views (z. B. Handbuch mit Markdown- und PDF-Libs) per `React.lazy()` laden und in `App.tsx` mit `<Suspense>` umgeben, damit sie in eigenen Chunks landen.
@@ -15,6 +15,6 @@ alwaysApply: true
 
 - **Handbuch/Dokumentation (release-fix)**
   - Inhalte, die pro Release fest zum Build gehören sollen: als **Build-Assets** bundeln (z. B. Markdown per `import.meta.glob`), nicht zur Laufzeit aus Dateisystem oder Netz nachladen.
-  - Pfad im Repo: `docs/handbuch/` (Einstieg z. B. `index.md`, Kapitel in `kapitel/*.md`). TOC wird aus **Frontmatter** gebaut: `title`, `order`, `slug`.
-  - Mehrere Einstiege zur Hilfe (Startseite-Tile, Einstellungen, Statuszeile) verbessern die Auffindbarkeit.
+  - Pfad im Repo: `docs/handbuch/de/` und `docs/handbuch/en/` (je Locale `index.md` + `kapitel/*.md`). TOC aus **Frontmatter**: `title`, `order`, `slug`; aktive Sprache folgt `i18n.language` im Loader (`handbookIndex.ts`).
+  - Mehrere Einstiege zur Hilfe (Home-Tile, Einstellungen, `StatusBar`) verbessern die Auffindbarkeit.
   - Bei neuen Handbuch-Kapiteln oder -Einstiegen: `APP_OVERVIEW.md` und ggf. `README.md` anpassen.
