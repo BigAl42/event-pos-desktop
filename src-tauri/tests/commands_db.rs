@@ -11,7 +11,7 @@ use common::{
 };
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_haendler_umsatz_returns_booking_with_abrechnungslauf_id() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -25,7 +25,7 @@ fn get_haendler_umsatz_returns_booking_with_abrechnungslauf_id() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_recent_abrechnungen_includes_booking_with_abrechnungslauf_id() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -39,7 +39,7 @@ fn get_recent_abrechnungen_includes_booking_with_abrechnungslauf_id() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn storno_position_excludes_booking_from_get_haendler_umsatz() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -55,7 +55,7 @@ fn storno_position_excludes_booking_from_get_haendler_umsatz() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_buchungen_for_abrechnung_returns_positionen() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -69,7 +69,7 @@ fn get_buchungen_for_abrechnung_returns_positionen() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_buchungen_for_haendler_returns_bookings_in_active_lauf() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -82,7 +82,7 @@ fn get_buchungen_for_haendler_returns_bookings_in_active_lauf() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn abrechnung_without_abrechnungslauf_id_does_not_appear_in_queries() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, _lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -96,7 +96,7 @@ fn abrechnung_without_abrechnungslauf_id_does_not_appear_in_queries() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_haendler_abrechnung_pdf_data_returns_summary_and_excludes_storno() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -120,7 +120,7 @@ fn get_haendler_abrechnung_pdf_data_returns_summary_and_excludes_storno() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_haendler_abrechnung_pdf_data_returns_zero_when_no_bookings() {
     let (_temp, _app, handle) = setup_test_app();
     let (_kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -133,7 +133,7 @@ fn get_haendler_abrechnung_pdf_data_returns_zero_when_no_bookings() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_haendler_abrechnung_pdf_data_errors_when_haendler_missing() {
     let (_temp, _app, handle) = setup_test_app();
     let (_kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -144,7 +144,7 @@ fn get_haendler_abrechnung_pdf_data_errors_when_haendler_missing() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_haendler_abrechnung_pdf_data_errors_when_lauf_missing() {
     let (_temp, _app, handle) = setup_test_app();
     insert_test_haendler(&handle, "H1");
