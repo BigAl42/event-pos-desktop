@@ -1,6 +1,7 @@
 //! Integrationstests für Sync: get_batch und apply_batch inkl. Abrechnungslauf-Konsistenz.
 //! Ausführen mit: cargo test --features test
-//! Hinweis: Tests, die die Tauri-App bauen, laufen nur auf Linux/Windows (macOS: EventLoop auf Main-Thread).
+//! Hinweis: Wie `commands_db` — Tauri-App-Tests sind auf macOS und Linux (u. a. headless CI) per
+//! `#[cfg_attr]` ignoriert; lokal auf Windows ausführen oder `--include-ignored` mit geeigneter UI-Umgebung.
 
 mod common;
 
@@ -9,7 +10,7 @@ use common::{insert_test_kasse_and_lauf, insert_test_kundenabrechnung, setup_tes
 use std::env;
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_batch_returns_abrechnungslauf_id_and_items() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -24,7 +25,7 @@ fn get_batch_returns_abrechnungslauf_id_and_items() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn apply_batch_inserts_abrechnungen_and_buchungen_with_lauf_id() {
     let temp_slave = tempfile::TempDir::new().expect("temp slave");
     let path_slave = temp_slave.path().to_string_lossy().to_string();
@@ -74,7 +75,7 @@ fn apply_batch_inserts_abrechnungen_and_buchungen_with_lauf_id() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn apply_batch_rejects_different_abrechnungslauf_id() {
     let temp_slave = tempfile::TempDir::new().expect("temp slave");
     let path_slave = temp_slave.path().to_string_lossy().to_string();
@@ -113,7 +114,7 @@ fn apply_batch_rejects_different_abrechnungslauf_id() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn update_last_sent_storno_creates_sync_state_row_if_missing() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, _lauf_id) = insert_test_kasse_and_lauf(&handle);
@@ -147,7 +148,7 @@ fn update_last_sent_storno_creates_sync_state_row_if_missing() {
 }
 
 #[test]
-#[cfg_attr(target_os = "macos", ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI")]
+#[cfg_attr(any(target_os = "macos", target_os = "linux"), ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env")]
 fn get_max_storno_zeitstempel_for_kasse_returns_max() {
     let (_temp, _app, handle) = setup_test_app();
     let (kassen_id, _lauf_id) = insert_test_kasse_and_lauf(&handle);
