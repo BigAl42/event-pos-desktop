@@ -68,7 +68,7 @@
 ## Build / Dev (Kurzreferenz)
 - **Dev**: `npm install` → `npm run tauri dev`
 - **Build**: `npm run build` → `npm run tauri build`
-- **Release-CI**: `.github/workflows/release-desktop.yml` – nach grünen Tests (Rust + Lint + Vitest) Bundles für Linux/Windows/macOS; Trigger: Tag `v*.*.*` oder `workflow_dispatch`; Artefakte: `src-tauri/target/release/bundle/` je Runner (`tauri.conf.json` → `bundle.targets` z. B. `"all"`, damit Linux/Windows nicht leer bleiben). Rust-Toolchain: `rust-toolchain.toml` (stable).
+- **Release-CI**: `.github/workflows/release-desktop.yml` – nach grünen Tests (Rust + Lint + Vitest) Bundles für Linux/Windows/macOS; Trigger: Tag `v*.*.*` oder `workflow_dispatch`; Artefakte: `src-tauri/target/release/bundle/` je Runner (`bundle.targets` u. a. `deb`, `appimage`, `nsis`, `dmg`, `app`; **Windows:** Workflow installiert **NSIS** via Chocolatey). Rust-Toolchain: `rust-toolchain.toml` (stable).
 
 ## Offene Roadmap (kurz)
 - **Historie**: Abrechnungsläufe behalten/auswerten (statt Bewegungsdaten zu löschen) – falls gewünscht.
