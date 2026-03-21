@@ -3,6 +3,7 @@
 ## Ziel / Scope
 - **Ziel**: Offline-fähiges Kassensystem mit mehreren Kassenplätzen, Händlerabrechnung, später P2P-Sync.
 - **Aktueller Stand**: Lokale Kasse **+ Master/Slave-Setup mit Sync**, Abrechnungsläufe, Storno und PDF-Export.
+- **Version**: `0.1.1` (synchron mit `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`).
 
 ## Internationalisierung (i18n)
 - **Stack**: `i18next` + `react-i18next` + Browser-Detector; **Standard-Locale EN**, **DE** wählbar (Einstellungen → Sprache; Persistenz `localStorage` / `i18nextLng`).
