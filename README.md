@@ -87,7 +87,7 @@ npm run tauri build
 
 ### Release-Builds in GitHub Actions (Linux / Windows / macOS)
 
-Workflow [`.github/workflows/release-desktop.yml`](.github/workflows/release-desktop.yml) läuft bei **Tags** der Form `v*.*.*` (z. B. `v0.2.0`) oder **manuell** („Run workflow“). Zuerst werden dieselben Checks wie in der CI ausgeführt (`cargo test --features test`, `npm run lint`, `npm run test:run`); **erst danach** baut Tauri auf `ubuntu-latest`, `windows-latest` und `macos-latest`. Die Installationsartefakte liegen unter **Actions → Workflow run → Artifacts** (`src-tauri/target/release/bundle/` pro Runner).
+Workflow [`.github/workflows/release-desktop.yml`](.github/workflows/release-desktop.yml) läuft bei **Tags** der Form `v*.*.*` (z. B. `v0.2.0`) oder **manuell** („Run workflow“). Zuerst werden dieselben Checks wie in der CI ausgeführt (`cargo test --features test`, `npm run lint`, `npm run test:run`); **erst danach** baut Tauri auf `ubuntu-latest`, `windows-latest` und `macos-latest`. Die Installationsartefakte liegen unter **Actions → Workflow run → Artifacts** (`src-tauri/target/release/bundle/` pro Runner). **`bundle.targets`** in `tauri.conf.json` muss je OS passende Formate bauen (z. B. `"all"` für die Matrix); nur `["app"]` erzeugt praktisch nur das macOS-`.app` und lässt Linux/Windows-Bundle-Ordner leer).
 
 **Version vor dem Tag** an drei Stellen angleichen: `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` (Feld `[package] version` in `Cargo.toml`).
 
