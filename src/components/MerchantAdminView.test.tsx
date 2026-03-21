@@ -103,7 +103,9 @@ describe("MerchantAdminView", () => {
       expect(screen.getByRole("button", { name: /Zurück/ })).toBeInTheDocument();
     });
     expect(screen.getByRole("heading", { name: /Händlerverwaltung/ })).toBeInTheDocument();
-    expect(screen.getByText(/Noch keine Händler angelegt/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Noch keine Händler angelegt/)).toBeInTheDocument();
+    });
     expect(screen.getByRole("button", { name: /Neuer Händler/ })).toBeInTheDocument();
   });
 

@@ -4,15 +4,10 @@
 //! („can call blocking only when running on the multi-threaded runtime“).
 //! Tao/Wry ist dafür über `Builder::any_thread()` unter `feature = "test"` (Linux/Windows) abgesichert.
 //!
-//! **Wichtig (macOS):** Der kombinierte Test ist mit `#[cfg_attr(target_os = "macos", ignore)]` versehen.
-//! `cargo test` zeigt dann `0 passed; N ignored` – die Tests wurden **nicht** ausgeführt, nur übersprungen
-//! (Tauri-App-Build/EventLoop auf macOS nicht im normalen Test-Thread unterstützt).
-//!
-//! **Wirklich ausführen:** Auf **Linux** oder **Windows** (oder CI dort), z. B.:
-//! `cd src-tauri && cargo test --features test --test sync_ring_n3`
-//!
-//! Optional lokal erzwingen (kann auf macOS fehlschlagen):  
-//! `cargo test --features test --test sync_ring_n3 -- --include-ignored`
+//! **Ignoriert auf macOS und Linux (u. a. headless CI):** wie andere Tauri-Integrationstests — GTK/Tauri
+//! EventLoop; siehe `#[cfg_attr]` am Test. **Ausführen** sinnvoll auf **Windows** oder mit
+//! `--include-ignored` in einer passenden Desktop-Umgebung, z. B.:
+//! `cd src-tauri && cargo test --features test --test sync_ring_n3 -- --include-ignored`
 
 mod common;
 
@@ -36,8 +31,8 @@ fn abort_all(handles: &mut Vec<JoinHandle<()>>) {
 /// (zwei `#[tokio::test]` laufen sonst gleichzeitig → GTK/GLib „main context already acquired“).
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[cfg_attr(
-    target_os = "macos",
-    ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or CI"
+    any(target_os = "macos", target_os = "linux"),
+    ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env"
 )]
 async fn sync_ring_n3_both_scenarios_sequential() {
     run_ring_n3_eventually_converges_and_keeps_stornos().await;

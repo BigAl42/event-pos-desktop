@@ -6,8 +6,8 @@ mod wipe_local_data_tests {
 
     #[test]
     #[cfg_attr(
-        target_os = "macos",
-        ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI"
+        any(target_os = "macos", target_os = "linux"),
+        ignore = "Tauri EventLoop requires dedicated UI thread; run on stable Windows CI or dedicated UI test env"
     )]
     fn wipe_local_data_deletes_instance_dir_contents() {
         let dir = tempdir().expect("tempdir");
