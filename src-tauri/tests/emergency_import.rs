@@ -53,8 +53,8 @@ fn sample_payload(export_lauf_id: &str) -> commands::NotfallExportDto {
 
 #[test]
 #[cfg_attr(
-    target_os = "macos",
-    ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI"
+    any(target_os = "macos", target_os = "linux"),
+    ignore = "Tauri EventLoop requires dedicated UI thread; run on Windows CI or dedicated UI test env"
 )]
 fn import_notfall_data_inserts_and_is_idempotent() {
     let (_temp, _app, handle) = setup_test_app();
@@ -84,8 +84,8 @@ fn import_notfall_data_inserts_and_is_idempotent() {
 
 #[test]
 #[cfg_attr(
-    target_os = "macos",
-    ignore = "Tauri EventLoop requires main thread; run on Linux/Windows or in CI"
+    any(target_os = "macos", target_os = "linux"),
+    ignore = "Tauri EventLoop requires dedicated UI thread; run on Windows CI or dedicated UI test env"
 )]
 fn import_notfall_data_blocks_when_mismatch_not_allowed() {
     let (_temp, _app, handle) = setup_test_app();
@@ -95,6 +95,11 @@ fn import_notfall_data_blocks_when_mismatch_not_allowed() {
     let err = commands::import_notfall_data(handle, payload, target_lauf_id, false)
         .err()
         .expect("expected error");
-    assert!(err.to_lowercase().contains("abbruch") || err.to_lowercase().contains("abgebrochen"));
+    // user_msg returns JSON with i18n code (not localized prose in Rust tests).
+    assert!(
+        err.contains("errors.notfall_import.billing_cycle_mismatch")
+            || err.to_lowercase().contains("abbruch")
+            || err.to_lowercase().contains("abgebrochen")
+    );
 }
 
